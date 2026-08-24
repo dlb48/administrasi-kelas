@@ -11,11 +11,11 @@ export default function Attendance() {
   const [isSaving, setIsSaving] = useState(false);
   
   // Input Tab State
-  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+  const [currentDate, setCurrentDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]); // YYYY-MM-DD
   
   // Rekap Tab State
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [rekapMonth, setRekapMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [rekapMonth, setRekapMonth] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 7)); // YYYY-MM
   const [rekapData, setRekapData] = useState([]); // List of attendance for the month
 
   // Fetch students on mount

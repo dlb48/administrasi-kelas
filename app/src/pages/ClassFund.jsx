@@ -14,13 +14,13 @@ export default function ClassFund() {
     type: 'in',
     description: '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     student_id: '',
     period: ''
   });
   const [selectedWeeks, setSelectedWeeks] = useState([]);
   
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // Format: YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().substring(0, 7)); // Format: YYYY-MM
   const [activeTab, setActiveTab] = useState('transactions');
 
   useEffect(() => {
@@ -183,7 +183,7 @@ export default function ClassFund() {
         type: 'in', 
         description: '', 
         amount: '', 
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         student_id: '',
         period: ''
       });
@@ -491,7 +491,7 @@ export default function ClassFund() {
                 onClick={() => {
                   setIsModalOpen(false);
                   setSelectedWeeks([]);
-                  setFormData({ type: 'in', description: '', amount: '', date: new Date().toISOString().split('T')[0], student_id: '', period: '' });
+                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: '' });
                 }}
               >
                 <span className="material-symbols-outlined">close</span>
@@ -684,7 +684,7 @@ export default function ClassFund() {
                 onClick={() => {
                   setIsModalOpen(false);
                   setSelectedWeeks([]);
-                  setFormData({ type: 'in', description: '', amount: '', date: new Date().toISOString().split('T')[0], student_id: '', period: '' });
+                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: '' });
                 }}
               >
                 Batal

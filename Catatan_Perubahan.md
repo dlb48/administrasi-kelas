@@ -121,5 +121,10 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
   - Data "Saldo Awal" disimpan secara langsung sebagai *record* transaksi masuk (pemasukan khusus) di dalam tabel `class_funds`, sehingga sistem menjadi lebih rapi dan konsisten secara *database*.
   - **Pembatasan Hak Akses (Role-Based Access):** Siswa yang diberikan wewenang (seperti Bendahara Kelas) tetap bisa mencatat transaksi Pemasukan/Pengeluaran dan menghapus riwayat. Namun, opsi khusus **"Saldo Awal"** di dalam form transaksi disembunyikan dan hanya dapat diatur oleh Admin (Guru).
 
+### 14. Pembaruan Versi Aplikasi
+- **File:** `app/src/components/Layout.jsx`, `app/src/pages/Login.jsx`
+- **Detail Perubahan:**
+  - Memperbarui label teks versi aplikasi di bagian *footer* halaman dari **v2.0** menjadi **v2.0.1** sebagai penanda dirilisnya perbaikan sistem manajemen pengaturan dan sinkronisasi saldo awal kas kelas.
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*
