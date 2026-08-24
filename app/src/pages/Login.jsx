@@ -13,17 +13,10 @@ export default function Login() {
   const [isSuccess, setIsSuccess] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { loginStudent } = useAuth();
+  const { loginStudent, appSettings } = useAuth();
   
-  const [className, setClassName] = useState('XII RPL 1');
-  const [schoolName, setSchoolName] = useState('Aplikasi Administrasi Kelas');
-
-  useEffect(() => {
-    const savedClass = localStorage.getItem('className');
-    const savedSchool = localStorage.getItem('schoolName');
-    if (savedClass) setClassName(savedClass);
-    if (savedSchool) setSchoolName(savedSchool);
-  }, []);
+  const className = appSettings?.className || 'XII RPL 1';
+  const schoolName = appSettings?.schoolName || 'Aplikasi Administrasi Kelas';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -187,7 +180,7 @@ export default function Login() {
         {/* Footer */}
         <footer className="mt-8 text-center pb-4">
           <p className="font-body-sm text-body-sm text-on-surface-variant/70">
-            Administrasi Kelas v2.0 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
+            Administrasi Kelas v2.0.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
           </p>
         </footer>
       </main>

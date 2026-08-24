@@ -107,5 +107,19 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
     - **Laporan Kas:** Tab khusus untuk memantau riwayat setoran uang kas (pemasukan) yang telah mereka bayarkan selama menjadi siswa.
   - **Kompresi Foto Otomatis:** Sistem kini dilengkapi dengan algoritma cerdas yang secara otomatis akan mengecilkan dimensi dan mengompres (*compress*) ukuran pasfoto yang diunggah hingga batas maksimal ~200KB sebelum dikirim ke database Supabase. Hal ini sangat menghemat penyimpanan Cloud dan mempercepat waktu *loading*.
 
+### 12. Sinkronisasi Identitas Sekolah ke Database
+- **File:** `app/src/contexts/AuthContext.jsx`, `app/src/pages/Settings.jsx`, `app/src/components/Layout.jsx`, `app/src/pages/Login.jsx`, `app/src/pages/StudentProfile.jsx`, Database Supabase (`settings`)
+- **Detail Perubahan:**
+  - Memindahkan penyimpanan pengaturan "Nama Kelas" dan "Nama Sekolah" yang sebelumnya menggunakan *localStorage* (penyimpanan lokal browser) ke database Supabase agar tersinkronisasi di semua perangkat.
+  - Memperbarui halaman terkait agar selalu mengambil dan menampilkan pengaturan identitas sekolah secara terpusat dan *real-time* melalui `AuthContext`.
+
+### 13. Integrasi Fitur Saldo Awal Uang Kas (Diperbarui)
+- **File:** `app/src/pages/ClassFund.jsx`, Database Supabase (`class_funds`)
+- **Detail Perubahan:**
+  - Fitur Saldo Awal kini dipindahkan dan dikelola murni di halaman Uang Kas Kelas, bukan lagi di Pengaturan.
+  - Menambahkan opsi jenis transaksi **"Saldo Awal"** pada formulir Catat Transaksi, berdampingan dengan Pemasukan dan Pengeluaran.
+  - Data "Saldo Awal" disimpan secara langsung sebagai *record* transaksi masuk (pemasukan khusus) di dalam tabel `class_funds`, sehingga sistem menjadi lebih rapi dan konsisten secara *database*.
+  - **Pembatasan Hak Akses (Role-Based Access):** Siswa yang diberikan wewenang (seperti Bendahara Kelas) tetap bisa mencatat transaksi Pemasukan/Pengeluaran dan menghapus riwayat. Namun, opsi khusus **"Saldo Awal"** di dalam form transaksi disembunyikan dan hanya dapat diatur oleh Admin (Guru).
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Settings() {
+  const { appSettings, fetchSettings } = useAuth();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
@@ -23,9 +25,9 @@ export default function Settings() {
           setEmail(user.email);
         }
 
-        // Load class settings from localStorage
-        setClassName(localStorage.getItem('className') || 'XII RPL 1');
-        setSchoolName(localStorage.getItem('schoolName') || 'Class Admin');
+        // Load class settings from AuthContext
+        setClassName(appSettings?.className || 'XII RPL 1');
+        setSchoolName(appSettings?.schoolName || 'Class Admin');
       } catch (error) {
         console.error('Error fetching user:', error.message);
       } finally {
@@ -34,9 +36,9 @@ export default function Settings() {
     }
 
     getProfile();
-  }, []);
+  }, [appSettings]);
 
-  const handleUpdateClass = (e) => {
+  const handleUpdateClass = async (e) => {
     e.preventDefault();
     setClassMessage('');
     
@@ -45,13 +47,20 @@ export default function Settings() {
       return;
     }
 
-    localStorage.setItem('className', className);
-    localStorage.setItem('schoolName', schoolName);
-    
-    setClassMessage('Identitas kelas berhasil disimpan! Memuat ulang tampilan...');
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    const { error } = await supabase.from('settings').update({
+      class_name: className,
+      school_name: schoolName
+    }).eq('id', 1);
+
+    if (error) {
+      setClassMessage('Gagal menyimpan identitas: ' + error.message);
+    } else {
+      await fetchSettings();
+      setClassMessage('Identitas kelas berhasil disimpan! Memuat ulang tampilan...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
   };
 
   const handleUpdateAccount = async (e) => {

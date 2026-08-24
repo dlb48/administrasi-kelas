@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ClassFund() {
+  const { userType } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [students, setStudents] = useState([]);
@@ -147,6 +149,11 @@ export default function ClassFund() {
         alert("Semua field (Siswa, Periode Bulan, Keterangan/Minggu, Nominal, dan Tanggal) wajib diisi untuk Pemasukan!");
         return;
       }
+    } else if (formData.type === 'initial') {
+      if (!formData.amount || !formData.date) {
+        alert("Nominal dan Tanggal wajib diisi untuk Saldo Awal!");
+        return;
+      }
     } else {
       if (!formData.description || !formData.amount || !formData.date) {
         alert("Semua field (Keterangan, Nominal, dan Tanggal) wajib diisi untuk Pengeluaran!");
@@ -158,8 +165,8 @@ export default function ClassFund() {
     try {
       const payload = {
         date: formData.date,
-        description: formData.description,
-        type: formData.type,
+        description: formData.type === 'initial' ? 'Saldo Awal' : formData.description,
+        type: formData.type === 'initial' ? 'in' : formData.type, // Store as 'in' in DB
         amount: parseInt(formData.amount, 10),
         student_id: formData.type === 'in' && formData.student_id ? formData.student_id : null,
         period: formData.type === 'in' && formData.period ? formData.period : null
@@ -518,6 +525,19 @@ export default function ClassFund() {
                       />
                       <span className="font-body-sm text-on-surface">Pengeluaran</span>
                     </label>
+                    {userType === 'admin' && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          className="text-primary focus:ring-primary border-outline-variant" 
+                          name="type" 
+                          type="radio" 
+                          value="initial" 
+                          checked={formData.type === 'initial'}
+                          onChange={handleInputChange}
+                        />
+                        <span className="font-body-sm text-on-surface">Saldo Awal</span>
+                      </label>
+                    )}
                   </div>
                 </div>
 
@@ -609,15 +629,25 @@ export default function ClassFund() {
                       })}
                     </div>
                   )}
-                  <input 
-                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline/60" 
-                    placeholder={formData.type === 'in' ? "Contoh: Uang Kas Budi, Donasi..." : "Contoh: Beli Spidol, Print..."} 
-                    type="text" 
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  {formData.type !== 'initial' && (
+                    <input 
+                      className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline/60" 
+                      placeholder={formData.type === 'in' ? "Contoh: Uang Kas Budi, Donasi..." : "Contoh: Beli Spidol, Print..."} 
+                      type="text" 
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  )}
+                  {formData.type === 'initial' && (
+                    <input 
+                      className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface-variant cursor-not-allowed opacity-80" 
+                      type="text" 
+                      value="Saldo Awal"
+                      disabled
+                    />
+                  )}
                 </div>
 
                 <div>

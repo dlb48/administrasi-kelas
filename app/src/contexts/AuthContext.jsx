@@ -9,7 +9,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [studentSession, setStudentSession] = useState(null);
+  const [appSettings, setAppSettings] = useState({ className: 'XII RPL 1', schoolName: 'Class Admin' });
   const [loading, setLoading] = useState(true);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('settings').select('*').eq('id', 1).single();
+      if (!error && data) {
+        setAppSettings({
+          className: data.class_name,
+          schoolName: data.school_name
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
 
   useEffect(() => {
     const getSession = async () => {
@@ -27,6 +42,9 @@ export const AuthProvider = ({ children }) => {
           console.error("Invalid student session", e);
         }
       }
+
+      // 3. Fetch app settings
+      await fetchSettings();
 
       setLoading(false);
     };
@@ -61,6 +79,8 @@ export const AuthProvider = ({ children }) => {
     session,
     user,
     studentSession,
+    appSettings,
+    fetchSettings,
     loginStudent,
     logout,
     loading,

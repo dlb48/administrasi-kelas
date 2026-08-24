@@ -4,7 +4,7 @@ import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
-  const { userType, studentSession, logout } = useAuth();
+  const { userType, studentSession, logout, appSettings } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
@@ -17,13 +17,8 @@ export default function Layout() {
   const [imgError, setImgError] = useState(false);
   const dropdownRef = useRef(null);
 
-  const [className, setClassName] = useState('XII RPL 1');
-  const [schoolName, setSchoolName] = useState('Class Admin');
-
-  useEffect(() => {
-    setClassName(localStorage.getItem('className') || 'XII RPL 1');
-    setSchoolName(localStorage.getItem('schoolName') || 'Class Admin');
-  }, []);
+  const className = appSettings?.className || 'XII RPL 1';
+  const schoolName = appSettings?.schoolName || 'Class Admin';
 
   useEffect(() => {
     setShowMobileMenu(false);
@@ -262,7 +257,7 @@ export default function Layout() {
           {/* Footer */}
           <footer className="mt-8 pt-6 pb-2 text-center border-t border-outline-variant/30">
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Administrasi Kelas v2.0 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
+              Administrasi Kelas v2.0.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
             </p>
           </footer>
         </main>

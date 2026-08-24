@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export default function StudentProfile() {
-  const { studentSession, userType } = useAuth();
+  const { studentSession, userType, appSettings } = useAuth();
   const [activeTab, setActiveTab] = useState('attendance');
   const [loading, setLoading] = useState(false);
   
@@ -118,7 +118,7 @@ export default function StudentProfile() {
                   <span className="material-symbols-outlined text-[20px]">badge</span> {studentSession.nisn}
                 </p>
                 <p className="font-body-md text-on-surface-variant flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[20px]">school</span> {localStorage.getItem('className') || 'Aplikasi Administrasi Kelas'}
+                  <span className="material-symbols-outlined text-[20px]">school</span> {appSettings?.className || 'Aplikasi Administrasi Kelas'}
                 </p>
               </div>
             </div>
