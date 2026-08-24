@@ -42,3 +42,30 @@ Setelah kode Anda berhasil masuk ke GitHub, Anda bisa mempublikasikan website An
    - Klik **Add** untuk setiap variabel.
 5. Klik **Deploy** dan tunggu 1-2 menit.
 6. Selesai! Vercel akan memberikan *link* (URL) website Anda yang sudah *live* dan bisa diakses siapa saja.
+
+---
+
+## 3. Cara Mengupdate Website (Jika Ada Perubahan)
+
+Jika di kemudian hari Anda mengedit kode (misalnya menambah fitur, mengubah warna, memperbaiki teks) dan ingin perubahan tersebut muncul di website yang sudah online, Anda **tidak perlu mengulangi semua langkah dari awal**. 
+
+Cukup buka terminal di VS Code, pastikan Anda berada di folder proyek, lalu jalankan 3 perintah ini secara berurutan:
+
+1. **Simpan semua perubahan ke dalam tahap persiapan (staging):**
+   ```bash
+   git add .
+   ```
+
+2. **Beri pesan atau catatan tentang apa yang Anda ubah:**
+   *(Ganti teks di dalam tanda kutip dengan catatan Anda sendiri)*
+   ```bash
+   git commit -m "Update: Memperbaiki tampilan halaman login"
+   ```
+
+3. **Kirim perubahan tersebut ke GitHub:**
+   ```bash
+   git push
+   ```
+
+**Selesai!** 
+Begitu kode masuk ke GitHub, **Vercel akan otomatis mendeteksinya** dan langsung memperbarui website Anda dalam waktu sekitar 1-2 menit tanpa perlu Anda tekan tombol apa-apa lagi di Vercel.
