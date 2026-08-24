@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-primary-container": "#dad7ff",
+                        "surface-variant": "#dce2f3",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "inverse-surface": "#2a313d",
+                        "surface-container-low": "#f0f3ff",
+                        "error": "#ba1a1a",
+                        "tertiary": "#684000",
+                        "tertiary-container": "#885500",
+                        "surface-tint": "#4d44e3",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#777587",
+                        "on-background": "#151c27",
+                        "secondary": "#006c49",
+                        "on-primary-fixed": "#0f0069",
+                        "on-tertiary-fixed": "#2a1700",
+                        "surface-container": "#e7eefe",
+                        "inverse-on-surface": "#ebf1ff",
+                        "on-secondary-container": "#00714d",
+                        "secondary-fixed": "#6ffbbe",
+                        "background": "#f9f9ff",
+                        "surface": "#f9f9ff",
+                        "on-tertiary-container": "#ffd4a4",
+                        "surface-dim": "#d3daea",
+                        "secondary-container": "#6cf8bb",
+                        "on-surface-variant": "#464555",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#151c27",
+                        "surface-container-highest": "#dce2f3",
+                        "on-secondary-fixed": "#002113",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "primary": "#3525cd",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-high": "#e2e8f8",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "tertiary-fixed": "#ffddb8",
+                        "inverse-primary": "#c3c0ff",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "outline-variant": "#c7c4d8",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "primary-container": "#4f46e5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "max-width": "1440px",
+                        "sm": "8px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "base": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body-md">
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col w-[280px] h-screen sticky left-0 top-0 border-r border-outline-variant dark:border-outline bg-surface dark:bg-inverse-surface py-lg flex-shrink-0">
+<div class="px-lg mb-xl">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">XII RPL 1</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Class Admin</p>
+</div>
+<nav class="flex-1 flex flex-col gap-sm">
+<a class="flex items-center px-lg py-md gap-md text-primary dark:text-inverse-primary border-l-4 border-primary dark:border-inverse-primary font-bold bg-primary-container/10 scale-[0.99] duration-150" href="#/dashboard">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center px-lg py-md gap-md text-on-surface-variant dark:text-surface-variant font-medium hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Students</span>
+</a>
+<a class="flex items-center px-lg py-md gap-md text-on-surface-variant dark:text-surface-variant font-medium hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-label-md text-label-md">Attendance</span>
+</a>
+<a class="flex items-center px-lg py-md gap-md text-on-surface-variant dark:text-surface-variant font-medium hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Class Fund</span>
+</a>
+<a class="flex items-center px-lg py-md gap-md text-on-surface-variant dark:text-surface-variant font-medium hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar -->
+<header class="full-width sticky top-0 z-40 bg-surface/80 dark:bg-inverse-surface/80 border-b border-outline-variant dark:border-outline backdrop-blur-md shadow-sm">
+<div class="flex justify-between items-center px-lg h-[64px] w-full">
+<div class="font-title-lg text-title-lg font-bold text-on-surface dark:text-inverse-on-surface">
+                    Class Admin
+                </div>
+<div class="flex items-center gap-md">
+<button class="p-sm text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant/50 dark:hover:bg-inverse-surface/50 rounded-full">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="p-sm text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant/50 dark:hover:bg-inverse-surface/50 rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-sm text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant/50 dark:hover:bg-inverse-surface/50 rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover ml-sm border border-outline-variant" data-alt="A small circular profile avatar for a school admin, showing a professional and friendly face in a well-lit modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATZOPNvuJdEBotUukBwbwxRxUMFbOqN1h30ScDFAEa8SncFraYnEulqCB0NMqAVB_aV2iZM2DhCriSoMlg-tkZ8ogqJlhHFdeUfdcGH7R2orQX9XfCLI3iLRqFitYlrOKFlUUtPJg-FN0NUTqJPL0sgHfGQLq57SbknHfLE_M85875j363m62VVctFEUWoUyieu8YFEDQtRKDwNQe5lNsWfwS7smX5Zsl8lvI922f2mB-Td-n1VOCcdQ"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-y-auto max-w-max-width mx-auto w-full">
+<div class="mb-xl">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Selamat pagi, Bu Rina 👋</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Sabtu, 23 Agustus 2026</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Stat Cards Row (Spans full width on mobile, 2 cols on desktop) -->
+<div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-lg">
+<div class="bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">Total Siswa</p>
+<p class="font-headline-lg text-headline-lg text-primary mt-sm count-up" data-target="32">0</p>
+</div>
+<div class="bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">Hadir</p>
+<p class="font-headline-lg text-headline-lg text-secondary mt-sm count-up" data-target="28">0</p>
+</div>
+<div class="bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">Tidak Hadir</p>
+<p class="font-headline-lg text-headline-lg text-error mt-sm count-up" data-target="4">0</p>
+</div>
+<!-- Attendance Progress -->
+<div class="col-span-1 sm:col-span-3 bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<div class="flex justify-between items-end mb-sm">
+<p class="font-title-lg text-title-lg text-on-surface">Tingkat Kehadiran</p>
+<p class="font-headline-md text-headline-md text-primary"><span class="count-up" data-target="87.5">0</span>%</p>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000 ease-out w-0" id="attendance-bar" style="width: 87.5%;"></div>
+</div>
+</div>
+</div>
+<!-- Cash Balance Widget -->
+<div class="md:col-span-1 bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)] flex flex-col justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase mb-sm">Saldo Uang Kas</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">Rp 487.000</p>
+</div>
+<div class="flex gap-sm mt-lg">
+<button class="flex-1 bg-primary text-on-primary py-sm px-md rounded-lg font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span> Masuk
+                        </button>
+<button class="flex-1 bg-surface-container-highest text-on-surface py-sm px-md rounded-lg font-label-md text-label-md hover:bg-surface-variant transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]" data-icon="remove">remove</span> Keluar
+                        </button>
+</div>
+</div>
+<!-- Tunggakan Kas List -->
+<div class="md:col-span-2 bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">Tunggakan Kas</h3>
+<div class="space-y-sm">
+<div class="flex justify-between items-center p-md bg-surface-container-lowest border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-label-md text-label-md">B</div>
+<span class="font-body-md text-body-md">Budi Santoso</span>
+</div>
+<span class="font-label-md text-label-md text-error bg-error-container/50 px-sm py-xs rounded">3 weeks</span>
+</div>
+<div class="flex justify-between items-center p-md bg-surface-container-lowest border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-label-md text-label-md">S</div>
+<span class="font-body-md text-body-md">Sari Indah</span>
+</div>
+<span class="font-label-md text-label-md text-error bg-error-container/50 px-sm py-xs rounded">2 weeks</span>
+</div>
+</div>
+</div>
+<!-- Aktivitas Terakhir List -->
+<div class="md:col-span-1 bg-surface p-lg rounded-xl border border-outline-variant shadow-[0_4px_6px_-1px_rgb(0,0,0,0.1)]">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-md">Aktivitas Terakhir</h3>
+<div class="relative pl-md border-l-2 border-surface-container-high space-y-lg">
+<div class="relative">
+<div class="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-surface"></div>
+<p class="font-body-md text-body-md text-on-surface">Ari</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Bayar kas</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-secondary ring-4 ring-surface"></div>
+<p class="font-body-md text-body-md text-on-surface">Sistem</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Absensi disimpan</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+        // Simple count-up animation
+        document.addEventListener("DOMContentLoaded", () => {
+            const counters = document.querySelectorAll('.count-up');
+            
+            counters.forEach(counter => {
+                const target = parseFloat(counter.getAttribute('data-target'));
+                const duration = 1500; // ms
+                const steps = 60;
+                const stepTime = Math.abs(Math.floor(duration / steps));
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    const increment = target / steps;
+                    current += increment;
+                    
+                    if (current >= target) {
+                        counter.innerText = Number.isInteger(target) ? target : target.toFixed(1);
+                        clearInterval(timer);
+                    } else {
+                        counter.innerText = Number.isInteger(target) ? Math.floor(current) : current.toFixed(1);
+                    }
+                }, stepTime);
+            });
+        });
+    </script>
+</body></html>

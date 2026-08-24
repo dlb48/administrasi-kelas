@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer utilities {
+    .filled-icon {
+        font-variation-settings: 'FILL' 1;
+    }
+}
+
+@layer components {
+    .status-chip-h { @apply bg-emerald-100 text-emerald-700 border-transparent; }
+    .status-chip-s, .status-chip-i { @apply bg-amber-100 text-amber-700 border-transparent; }
+    .status-chip-a { @apply bg-red-100 text-red-700 border-transparent; }
+    .status-chip-default { @apply bg-surface-container text-on-surface-variant border-outline-variant; }
+    
+    .cal-h { @apply bg-emerald-500 text-white; }
+    .cal-s { @apply bg-blue-500 text-white; }
+    .cal-i { @apply bg-amber-500 text-white; }
+    .cal-a { @apply bg-red-500 text-white; }
+    .cal-empty { @apply bg-surface-container-low text-on-surface; }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #c7c4d8; border-radius: 20px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #464555; }
+}
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}

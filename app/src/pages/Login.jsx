@@ -1,0 +1,208 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
+import { useAuth } from '../contexts/AuthContext';
+
+export default function Login() {
+  const [loginMode, setLoginMode] = useState('admin'); // 'admin' atau 'siswa'
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { loginStudent } = useAuth();
+  
+  const [className, setClassName] = useState('XII RPL 1');
+  const [schoolName, setSchoolName] = useState('Aplikasi Administrasi Kelas');
+
+  useEffect(() => {
+    const savedClass = localStorage.getItem('className');
+    const savedSchool = localStorage.getItem('schoolName');
+    if (savedClass) setClassName(savedClass);
+    if (savedSchool) setSchoolName(savedSchool);
+  }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    if (loginMode === 'admin') {
+      const formattedEmail = username.includes('@') ? username : `${username}@kelas.com`;
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formattedEmail,
+        password: password,
+      });
+
+      setIsLoading(false);
+
+      if (error) {
+        setIsSuccess(false);
+        setToastMessage('Username atau Password salah.');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } else {
+        setIsSuccess(true);
+        setToastMessage('Login Admin berhasil. Mengalihkan...');
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          navigate('/dashboard');
+        }, 1500);
+      }
+    } else {
+      // Login Siswa
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('nisn', username)
+        .eq('password', password)
+        .maybeSingle();
+
+      setIsLoading(false);
+        
+      if (error || !data) {
+        console.error("Student login error:", error);
+        setIsSuccess(false);
+        setToastMessage(error ? `DB Error: ${error.message}` : 'NISN atau Password salah.');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } else {
+        setIsSuccess(true);
+        setToastMessage('Login Siswa berhasil. Mengalihkan...');
+        setShowToast(true);
+        loginStudent(data);
+        setTimeout(() => {
+          setShowToast(false);
+          navigate('/dashboard');
+        }, 1500);
+      }
+    }
+  };
+
+  return (
+    <div className="bg-background min-h-screen flex items-center justify-center relative overflow-hidden font-body-md text-on-background">
+      {/* Main Container */}
+      <main className="relative z-10 w-full max-w-[448px] px-margin-mobile md:px-0">
+        {/* Login Card */}
+        <div className="bg-surface/95 backdrop-blur-xl border border-outline-variant rounded-xl p-lg md:p-xl shadow-[0_20px_25px_-5px_rgb(0,0,0,0.1)]">
+          {/* Header */}
+          <div className="text-center mb-xl">
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-md shadow-sm transition-colors ${loginMode === 'admin' ? 'bg-primary-container text-on-primary-container' : 'bg-secondary-container text-on-secondary-container'}`}>
+              <span className="material-symbols-outlined text-4xl filled-icon" data-icon={loginMode === 'admin' ? 'school' : 'badge'}>
+                {loginMode === 'admin' ? 'school' : 'badge'}
+              </span>
+            </div>
+            <h1 className="font-headline-md text-headline-md text-on-surface mb-xs">{className}</h1>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{schoolName}</p>
+          </div>
+          
+          {/* Mode Toggle */}
+          <div className="flex bg-surface-container-low rounded-lg p-1 mb-lg relative">
+            <div 
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-surface rounded-md shadow-sm transition-transform duration-300 ease-in-out ${loginMode === 'siswa' ? 'translate-x-full ml-1' : ''}`}
+            />
+            <button 
+              type="button"
+              className={`flex-1 py-2 font-label-md text-label-md z-10 rounded-md transition-colors ${loginMode === 'admin' ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+              onClick={() => { setLoginMode('admin'); setUsername(''); setPassword(''); }}
+            >
+              Admin Guru
+            </button>
+            <button 
+              type="button"
+              className={`flex-1 py-2 font-label-md text-label-md z-10 rounded-md transition-colors ${loginMode === 'siswa' ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+              onClick={() => { setLoginMode('siswa'); setUsername(''); setPassword(''); }}
+            >
+              Akses Siswa
+            </button>
+          </div>
+
+          {/* Form */}
+          <form className="space-y-md" onSubmit={handleLogin}>
+            <div className="space-y-sm">
+              <label className="block font-label-md text-label-md text-on-surface" htmlFor="username">
+                {loginMode === 'admin' ? 'Username / Email' : 'NISN'}
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant" data-icon="person">person</span>
+                <input 
+                  className="w-full bg-surface border border-outline-variant rounded-lg pl-10 pr-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow font-body-md text-body-md h-12" 
+                  id="username" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder={loginMode === 'admin' ? 'Masukkan username admin' : 'Masukkan NISN Anda'} 
+                  required 
+                  type="text" 
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-sm">
+              <label className="block font-label-md text-label-md text-on-surface" htmlFor="password">Password</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant" data-icon="lock">lock</span>
+                <input 
+                  className="w-full bg-surface border border-outline-variant rounded-lg pl-10 pr-10 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow font-body-md text-body-md h-12" 
+                  id="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={loginMode === 'admin' ? 'Masukkan password' : 'Masukkan password (default 12345)'} 
+                  required 
+                  type={showPassword ? 'text' : 'password'} 
+                />
+                <button 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  type="button"
+                >
+                  <span className="material-symbols-outlined" data-icon={showPassword ? "visibility_off" : "visibility"}>
+                    {showPassword ? "visibility_off" : "visibility"}
+                  </span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="pt-sm">
+              <button 
+                className="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-title-lg text-title-lg rounded-lg h-12 flex items-center justify-center transition-colors shadow-sm disabled:opacity-50" 
+                type="submit"
+                disabled={isLoading}
+              >
+                  {isLoading ? 'Memproses...' : (loginMode === 'admin' ? 'Masuk sebagai Admin' : 'Masuk sebagai Siswa')}
+              </button>
+            </div>
+          </form>
+          
+          {/* Footer Link */}
+          <div className="mt-lg text-center">
+            <a className="font-body-sm text-body-sm text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">
+                Lupa password? Hubungi Admin
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="mt-8 text-center pb-4">
+          <p className="font-body-sm text-body-sm text-on-surface-variant/70">
+            Administrasi Kelas v2.0 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
+          </p>
+        </footer>
+      </main>
+
+      {/* Toast Notification */}
+      <div 
+        className={`fixed bottom-margin-mobile left-1/2 -translate-x-1/2 px-lg py-md rounded-lg shadow-[0_20px_25px_-5px_rgb(0,0,0,0.1)] flex items-center gap-sm transform transition-all duration-300 z-50 ${isSuccess ? 'bg-inverse-surface text-inverse-on-surface' : 'bg-error text-on-error'} ${
+          showToast ? 'translate-y-0 opacity-100' : 'translate-y-[150%] opacity-0'
+        }`}
+      >
+        <span className="material-symbols-outlined filled-icon" data-icon={isSuccess ? "check_circle" : "error"}>
+          {isSuccess ? "check_circle" : "error"}
+        </span>
+        <span className="font-body-md text-body-md">{toastMessage}</span>
+      </div>
+    </div>
+  );
+}
