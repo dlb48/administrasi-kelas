@@ -132,5 +132,19 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
   - Mengubah judul nama aplikasi pada tab browser dari "Administrasi Kelas 2.0" menjadi "Administrasi Kelas".
   - Memperbaiki perhitungan tanggal di fitur Presensi dan Uang Kas Kelas agar selalu akurat mengikuti zona waktu lokal (timezone) perangkat pengguna. Sebelumnya sistem selalu mengambil tanggal dalam format UTC yang menyebabkan ketidaksesuaian hari saat digunakan pada pagi hari.
 
+### 16. Fitur Pengaturan Hari Libur & Auto-Lock Presensi (v2.1.1)
+- **File:** `app/src/pages/Settings.jsx`, `app/src/pages/Attendance.jsx`, Database Supabase (`holidays`)
+- **Detail Perubahan:**
+  - Menambahkan pengaturan baru untuk menentukan **Libur Mingguan** (misal: setiap hari Minggu) dan **Libur Event** (insidental dengan keterangan).
+  - Sistem kalender absen akan mendeteksi libur tersebut, mencetak kotak kalender berwarna merah, dan memunculkan deskripsi libur di dalam kalender.
+  - Menerapkan fitur *Auto-Lock*: tombol input presensi akan dikunci (disabled) dan muncul peringatan jika tanggal yang dipilih jatuh pada hari libur.
+  - Menerapkan perlindungan ganda (pencegahan tumpang tindih): Jika presensi untuk hari tersebut sudah pernah disimpan, tombol input akan terkunci dan tombol "Simpan" berubah menjadi "Hapus Presensi Hari Ini". Pengguna wajib menekan hapus jika ingin merevisi presensi di hari tersebut.
+
+### 17. Perbaikan Akurasi Tunggakan Kas (v2.1.1)
+- **File:** `app/src/pages/Settings.jsx`, `app/src/pages/ClassFund.jsx`, `app/src/pages/Dashboard.jsx`
+- **Detail Perubahan:**
+  - Mengubah titik awal perhitungan komulatif target uang kas (akumulasi 4 minggu per bulan) dari yang sebelumnya kaku pada bulan berjalan, menjadi dinamis berdasarkan **Bulan Awal Kas** yang kini bisa disetel langsung oleh Admin dari halaman Pengaturan.
+  - Logika tunggakan akan secara cerdas menghitung bulan-bulan sebelumnya (sejak "Bulan Awal Kas") hingga bulan saat ini, sehingga total tunggakan akumulatif tampil jauh lebih akurat jika ada siswa yang belum membayar berbulan-bulan.
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*
