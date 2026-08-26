@@ -88,37 +88,60 @@ export default function Dashboard() {
 
       // 3. Fetch Class Funds (Saldo & Aktivitas)
       const { data: fundsData } = await supabase.from('class_funds').select('*, students(name)').order('created_at', { ascending: false });
-      const totalIncome = (fundsData || []).filter(f => f.type === 'in').reduce((acc, curr) => acc + curr.amount, 0);
-      const totalExpense = (fundsData || []).filter(f => f.type === 'out').reduce((acc, curr) => acc + curr.amount, 0);
+      const regularFunds = (fundsData || []).filter(f => f.type !== 'target');
+      const totalIncome = regularFunds.filter(f => f.type === 'in').reduce((acc, curr) => acc + curr.amount, 0);
+      const totalExpense = regularFunds.filter(f => f.type === 'out').reduce((acc, curr) => acc + curr.amount, 0);
       const saldoKas = totalIncome - totalExpense;
 
-      // 4. Tunggakan Kas (For Current Month)
-      const currentMonthFunds = (fundsData || []).filter(f => {
-         const txYear = f.date ? f.date.split('-')[0] : '';
-         return f.type === 'in' && f.period === currentMonthName && txYear === currentYear;
-      });
+      // 4. Tunggakan Kas (Kumulatif sampai bulan ini)
+      const startMonthSetting = (fundsData || []).find(t => t.type === 'setting' && t.period === 'awal');
+      let startMonthInt = 7;
+      let startYearInt = today.getFullYear();
+      if (startMonthSetting) {
+        startMonthInt = startMonthSetting.amount;
+        if (startMonthSetting.date) {
+          startYearInt = parseInt(startMonthSetting.date.split('-')[0], 10);
+        }
+      }
+
+      const targetFunds = (fundsData || []).filter(t => t.type === 'target');
+      const getTargetForMonth = (yearInt, monthInt) => {
+        const monthName = monthNames[monthInt - 1];
+        const targetObj = targetFunds.find(t => t.period === monthName && t.date?.startsWith(yearInt.toString()));
+        return targetObj ? targetObj.amount : 8000;
+      };
+
+      const currentYearInt = today.getFullYear();
+      const currentMonthInt = today.getMonth() + 1;
       
+      let cumulativeTarget = 0;
+      const totalMonthsDiff = (currentYearInt - startYearInt) * 12 + (currentMonthInt - startMonthInt);
+      
+      if (totalMonthsDiff >= 0) {
+        for (let i = 0; i <= totalMonthsDiff; i++) {
+          const currentMonthTotal = startMonthInt - 1 + i;
+          const m = (currentMonthTotal % 12) + 1;
+          const yTarget = startYearInt + Math.floor(currentMonthTotal / 12);
+          cumulativeTarget += getTargetForMonth(yTarget, m);
+        }
+      }
+      
+      const currentYm = `${currentYearInt}-${currentMonthInt.toString().padStart(2, '0')}`;
       const tunggakanList = [];
+      
       activeStudents.forEach(student => {
-         const studentFunds = currentMonthFunds.filter(f => f.student_id === student.id);
-         let paidCount = 0;
-         studentFunds.forEach(t => {
-           if (t?.description?.toLowerCase().includes('minggu')) {
-             const matches = t.description.match(/\d+/g);
-             if (matches) {
-               matches.forEach(m => {
-                 const weekNum = parseInt(m);
-                 if (weekNum >= 1 && weekNum <= 5) paidCount++;
-               });
-             }
-           }
+         const studentFunds = regularFunds.filter(f => {
+           if (f.type !== 'in' || f.student_id !== student.id) return false;
+           const txYm = f.date ? f.date.substring(0, 7) : '';
+           return txYm <= currentYm;
          });
+         const totalPaid = studentFunds.reduce((acc, curr) => acc + (curr.amount || 0), 0);
          
-         if (paidCount < 4) { // Assume 4 weeks is a normal target
-            tunggakanList.push({ name: student.name, paidCount, remaining: 4 - paidCount });
+         if (totalPaid < cumulativeTarget) {
+            tunggakanList.push({ name: student.name, remaining: cumulativeTarget - totalPaid });
          }
       });
-      tunggakanList.sort((a, b) => a.paidCount - b.paidCount);
+      tunggakanList.sort((a, b) => b.remaining - a.remaining);
 
       setStats({
         totalSiswa,
@@ -221,7 +244,7 @@ export default function Dashboard() {
 
           {/* Tunggakan Kas List - Full Width Bottom */}
           <div className="md:col-span-3 bg-surface p-lg rounded-xl border border-outline-variant shadow-sm">
-            <h3 className="font-title-lg text-title-lg text-on-surface mb-md">Belum Lunas Kas Bulan {currentMonthName}</h3>
+            <h3 className="font-title-lg text-title-lg text-on-surface mb-md">Tunggakan Kas (Kumulatif s.d. {currentMonthName} {currentYear})</h3>
             {stats.tunggakan.length === 0 ? (
               <p className="text-on-surface-variant font-body-sm text-center py-4">Semua siswa sudah melunasi kas bulan ini!</p>
             ) : (
@@ -232,7 +255,7 @@ export default function Dashboard() {
                       <span className="font-body-md text-body-md line-clamp-1" title={t.name}>{t.name}</span>
                     </div>
                     <span className="font-label-sm text-label-sm text-error bg-error-container/50 px-2 py-1 rounded whitespace-nowrap">
-                      Kurang {t.remaining} mgg
+                      Kurang {formatCurrency(t.remaining)}
                     </span>
                   </div>
                 ))}

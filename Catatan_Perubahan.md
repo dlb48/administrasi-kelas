@@ -126,5 +126,11 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
 - **Detail Perubahan:**
   - Memperbarui label teks versi aplikasi di bagian *footer* halaman dari **v2.0** menjadi **v2.0.1** sebagai penanda dirilisnya perbaikan sistem manajemen pengaturan dan sinkronisasi saldo awal kas kelas.
 
+### 15. Penyesuaian Nama Aplikasi dan Perbaikan Zona Waktu Tanggal
+- **File:** `app/index.html`, `app/src/pages/Attendance.jsx`, `app/src/pages/ClassFund.jsx`
+- **Detail Perubahan:**
+  - Mengubah judul nama aplikasi pada tab browser dari "Administrasi Kelas 2.0" menjadi "Administrasi Kelas".
+  - Memperbaiki perhitungan tanggal di fitur Presensi dan Uang Kas Kelas agar selalu akurat mengikuti zona waktu lokal (timezone) perangkat pengguna. Sebelumnya sistem selalu mengambil tanggal dalam format UTC yang menyebabkan ketidaksesuaian hari saat digunakan pada pagi hari.
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*

@@ -26,7 +26,7 @@ export default function Reports() {
       return;
     }
 
-    const headers = ['No', 'Nama Siswa', 'Hadir', 'Sakit', 'Izin', 'Alpa', 'Total Presensi', 'Bayar Kas (Minggu)'];
+    const headers = ['No', 'Nama Siswa', 'Hadir', 'Sakit', 'Izin', 'Alpa', 'Total Presensi', 'Total Kas (Rp)'];
     
     const rows = attendanceReport.map((student, index) => [
       index + 1,
@@ -36,7 +36,7 @@ export default function Reports() {
       student.summary.I,
       student.summary.A,
       student.summary.total,
-      student.paidCount
+      student.totalPaid
     ]);
 
     const csvContent = [
@@ -93,7 +93,6 @@ export default function Reports() {
       const { data: fundsData, error: fundsError } = await supabase
         .from('class_funds')
         .select('*')
-        .eq('type', 'in')
         .eq('period', periodName);
       
       if (fundsError) throw fundsError;
@@ -118,28 +117,23 @@ export default function Reports() {
       }
     });
 
-    const studentFunds = classFundsData.filter(f => f.student_id === student.id);
-    const paidWeeks = new Set();
-    studentFunds.forEach(t => {
-      if (t?.description?.toLowerCase().includes('minggu')) {
-        const matches = t.description.match(/\d+/g);
-        if (matches) {
-          matches.forEach(m => {
-            const weekNum = parseInt(m);
-            if (weekNum >= 1 && weekNum <= 5) {
-              paidWeeks.add(weekNum);
-            }
-          });
-        }
-      }
-    });
+    const regularFunds = classFundsData.filter(f => f.type !== 'target');
+    const targetObj = classFundsData.find(f => f.type === 'target');
+    const targetKas = targetObj ? targetObj.amount : 8000;
+
+    const studentFunds = regularFunds.filter(f => f.type === 'in' && f.student_id === student.id);
+    const totalPaid = studentFunds.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    const isLunas = totalPaid >= targetKas;
 
     return {
       ...student,
       summary,
-      paidCount: paidWeeks.size
+      totalPaid,
+      isLunas
     };
   });
+
+  const formatCurrency = (amount) => 'Rp ' + amount.toLocaleString('id-ID');
 
   return (
     <>
@@ -209,7 +203,7 @@ export default function Reports() {
                     <th className="p-3 text-center text-amber-600">I</th>
                     <th className="p-3 text-center text-error">A</th>
                     <th className="p-3 text-center">Total</th>
-                    <th className="p-3 text-center border-l border-outline-variant/30">Bayar Kas</th>
+                    <th className="p-3 text-center border-l border-outline-variant/30">Total Kas</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,10 +216,10 @@ export default function Reports() {
                       <td className="p-3 text-center font-body-sm font-semibold">{student.summary.A}</td>
                       <td className="p-3 text-center font-body-sm font-bold bg-surface-container-lowest/50">{student.summary.total}</td>
                       <td className="p-3 text-center font-body-sm border-l border-outline-variant/30">
-                        {student.paidCount === 5 ? (
-                          <span className="text-secondary font-bold bg-secondary/10 px-2 py-0.5 rounded text-xs">Lunas (5x)</span>
-                        ) : student.paidCount > 0 ? (
-                          <span className="text-primary font-medium">{student.paidCount}x</span>
+                        {student.isLunas ? (
+                          <span className="text-secondary font-bold bg-secondary/10 px-2 py-0.5 rounded text-xs">Lunas</span>
+                        ) : student.totalPaid > 0 ? (
+                          <span className="text-primary font-medium">{formatCurrency(student.totalPaid)}</span>
                         ) : (
                           <span className="text-outline-variant">-</span>
                         )}

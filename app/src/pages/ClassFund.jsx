@@ -10,18 +10,23 @@ export default function ClassFund() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const currentMonthIndex = new Date().getMonth();
+
   const [formData, setFormData] = useState({
     type: 'in',
     description: '',
     amount: '',
     date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     student_id: '',
-    period: ''
+    period: monthNames[currentMonthIndex]
   });
-  const [selectedWeeks, setSelectedWeeks] = useState([]);
   
   const [selectedMonth, setSelectedMonth] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().substring(0, 7)); // Format: YYYY-MM
+  const [startMonthInt, setStartMonthInt] = useState(7); // Default Juli
+  const [startYearInt, setStartYearInt] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState('transactions');
+  const [targetKasData, setTargetKasData] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -52,7 +57,20 @@ export default function ClassFund() {
         .order('created_at', { ascending: false });
 
       if (fundsError) throw fundsError;
-      setTransactions(fundsData || []);
+      
+      const regularFunds = (fundsData || []).filter(t => t.type !== 'target' && t.type !== 'setting');
+      const targetFunds = (fundsData || []).filter(t => t.type === 'target');
+      const startMonthSetting = (fundsData || []).find(t => t.type === 'setting' && t.period === 'awal');
+      
+      if (startMonthSetting) {
+        setStartMonthInt(startMonthSetting.amount);
+        if (startMonthSetting.date) {
+          setStartYearInt(parseInt(startMonthSetting.date.split('-')[0], 10));
+        }
+      }
+      
+      setTransactions(regularFunds);
+      setTargetKasData(targetFunds);
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('Gagal mengambil data uang kas: ' + error.message);
@@ -61,7 +79,6 @@ export default function ClassFund() {
     }
   };
 
-  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const selectedYear = selectedMonth.split('-')[0];
   const selectedMonthIndex = parseInt(selectedMonth.split('-')[1]) - 1;
   const currentPeriod = monthNames[selectedMonthIndex];
@@ -78,6 +95,43 @@ export default function ClassFund() {
   const incomeThisMonth = filteredTransactions.filter(t => t?.type === 'in').reduce((acc, curr) => acc + (curr.amount || 0), 0);
   const expenseThisMonth = filteredTransactions.filter(t => t?.type === 'out').reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
+  const currentTargetObj = targetKasData.find(t => t.period === currentPeriod && t.date?.startsWith(selectedYear));
+  const targetKasBulanIni = currentTargetObj ? currentTargetObj.amount : 8000;
+
+  const handleSetTargetKas = async () => {
+    const newTarget = prompt(`Masukkan Target Kas untuk bulan ${currentPeriod} ${selectedYear} (Rp):`, targetKasBulanIni);
+    if (newTarget === null) return;
+    
+    const parsedTarget = parseInt(newTarget.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(parsedTarget) || parsedTarget < 0) {
+      alert('Nominal tidak valid.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Delete old target if exists
+      if (currentTargetObj) {
+        await supabase.from('class_funds').delete().eq('id', currentTargetObj.id);
+      }
+      // Insert new target
+      const { error } = await supabase.from('class_funds').insert([{
+        type: 'target',
+        description: 'Target Bulan Ini',
+        amount: parsedTarget,
+        period: currentPeriod,
+        date: `${selectedYear}-${selectedMonth.split('-')[1]}-01`
+      }]);
+      
+      if (error) throw error;
+      await fetchData();
+    } catch (error) {
+      console.error('Error setting target kas:', error);
+      alert('Gagal mengatur target kas: ' + error.message);
+      setLoading(false);
+    }
+  };
+
   const getMonthName = (yearMonth) => {
     if (!yearMonth) return '';
     const [year, month] = yearMonth.split('-');
@@ -85,40 +139,53 @@ export default function ClassFund() {
     return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   };
 
+  const selectedYearInt = parseInt(selectedMonth.split('-')[0], 10);
+  const selectedMonthInt = parseInt(selectedMonth.split('-')[1], 10);
+
+  const getTargetForMonth = (yearInt, monthInt) => {
+    const monthName = monthNames[monthInt - 1];
+    const targetObj = targetKasData.find(t => t.period === monthName && t.date?.startsWith(yearInt.toString()));
+    return targetObj ? targetObj.amount : 8000;
+  };
+
+  let cumulativeTarget = 0;
+  
+  // Calculate total months difference from startYear/Month to selectedYear/Month
+  const totalMonthsDiff = (selectedYearInt - startYearInt) * 12 + (selectedMonthInt - startMonthInt);
+  
+  if (totalMonthsDiff >= 0) {
+    for (let i = 0; i <= totalMonthsDiff; i++) {
+      const currentMonthTotal = startMonthInt - 1 + i;
+      const m = (currentMonthTotal % 12) + 1;
+      const yTarget = startYearInt + Math.floor(currentMonthTotal / 12);
+      cumulativeTarget += getTargetForMonth(yTarget, m);
+    }
+  }
+
   const studentPaymentStatus = students.map(student => {
     const studentTx = transactions.filter(t => {
-      const txYear = t.date ? t.date.split('-')[0] : '';
-      return t.type === 'in' && 
-             t.student_id === student.id && 
-             t.period === currentPeriod &&
-             txYear === selectedYear;
+      if (t.type !== 'in' || t.student_id !== student.id) return false;
+      // Include all transactions up to the end of the selected month
+      const txYm = t.date ? t.date.substring(0, 7) : '';
+      return txYm <= selectedMonth;
     });
 
-    const paidWeeks = new Set();
     let totalPaid = 0;
 
     studentTx.forEach(t => {
       totalPaid += t.amount || 0;
-      if (t?.description?.toLowerCase().includes('minggu')) {
-        const matches = t.description.match(/\d+/g);
-        if (matches) {
-          matches.forEach(m => {
-            const weekNum = parseInt(m);
-            if (weekNum >= 1 && weekNum <= 5) {
-              paidWeeks.add(weekNum);
-            }
-          });
-        }
-      }
     });
 
-    const isLunas = paidWeeks.size >= 5;
+    const kurangnya = Math.max(0, cumulativeTarget - totalPaid);
+    const lebihnya = Math.max(0, totalPaid - cumulativeTarget);
+    const isLunas = kurangnya === 0;
 
     return {
       ...student,
-      paidWeeks: Array.from(paidWeeks).sort(),
       totalPaid,
-      status: isLunas ? 'Lunas' : 'Menunggak'
+      kurangnya,
+      lebihnya,
+      isLunas
     };
   });
 
@@ -134,7 +201,6 @@ export default function ClassFund() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'student_id' || name === 'period' || name === 'type') {
-      setSelectedWeeks([]);
       setFormData({ ...formData, [name]: value, description: '' });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -145,8 +211,8 @@ export default function ClassFund() {
     e.preventDefault();
     
     if (formData.type === 'in') {
-      if (!formData.student_id || !formData.period || !formData.description || !formData.amount || !formData.date) {
-        alert("Semua field (Siswa, Periode Bulan, Keterangan/Minggu, Nominal, dan Tanggal) wajib diisi untuk Pemasukan!");
+      if (!formData.student_id || !formData.period || !formData.amount || !formData.date) {
+        alert("Siswa, Periode Bulan, Nominal, dan Tanggal wajib diisi untuk Pemasukan!");
         return;
       }
     } else if (formData.type === 'initial') {
@@ -155,8 +221,8 @@ export default function ClassFund() {
         return;
       }
     } else {
-      if (!formData.description || !formData.amount || !formData.date) {
-        alert("Semua field (Keterangan, Nominal, dan Tanggal) wajib diisi untuk Pengeluaran!");
+      if (!formData.amount || !formData.date) {
+        alert("Nominal dan Tanggal wajib diisi untuk Pengeluaran!");
         return;
       }
     }
@@ -185,9 +251,8 @@ export default function ClassFund() {
         amount: '', 
         date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         student_id: '',
-        period: ''
+        period: monthNames[new Date().getMonth()]
       });
-      setSelectedWeeks([]);
       setIsModalOpen(false);
       fetchData(); // Refresh list to get the joined student name
     } catch (error) {
@@ -216,35 +281,6 @@ export default function ClassFund() {
       alert('Gagal menghapus transaksi: ' + error.message);
     }
   };
-
-  const alreadyPaidWeeks = isModalOpen && formData.type === 'in' && formData.student_id && formData.period
-    ? (() => {
-        const studentTx = transactions.filter(t => {
-          const txYear = t.date ? t.date.split('-')[0] : '';
-          const formYear = formData.date ? formData.date.split('-')[0] : new Date().getFullYear().toString();
-          return t.type === 'in' && 
-                 t.student_id === formData.student_id && 
-                 t.period === formData.period &&
-                 txYear === formYear;
-        });
-
-        const paid = new Set();
-        studentTx.forEach(t => {
-          if (t?.description?.toLowerCase().includes('minggu')) {
-            const matches = t.description.match(/\d+/g);
-            if (matches) {
-              matches.forEach(m => {
-                const weekNum = parseInt(m);
-                if (weekNum >= 1 && weekNum <= 5) {
-                  paid.add(weekNum);
-                }
-              });
-            }
-          }
-        });
-        return Array.from(paid);
-      })()
-    : [];
 
   return (
     <>
@@ -348,7 +384,7 @@ export default function ClassFund() {
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : filteredTransactions.length > 0 ? filteredTransactions.map((transaction) => (
-          <div key={transaction.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-outline-variant/30 hover:bg-surface-container-lowest/50 transition-colors items-center group">
+          <div key={transaction.id} className="relative grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-outline-variant/30 hover:bg-surface-container-lowest/50 transition-colors items-center group">
             <div className="md:col-span-2 font-body-sm text-on-surface-variant">{formatDate(transaction.date)}</div>
             
             <div className="md:col-span-3 flex flex-col">
@@ -392,7 +428,7 @@ export default function ClassFund() {
             }`}>
               {transaction.type === 'in' ? '+' : '-'} {formatCurrency(transaction.amount)}
             </div>
-            <div className="absolute right-4 top-4 md:relative md:right-auto md:top-auto md:flex col-span-1 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-4 top-4 md:relative md:right-auto md:top-auto md:flex col-span-1 justify-end">
               <button 
                 className="text-outline hover:text-error"
                 onClick={() => handleDelete(transaction.id)}
@@ -413,27 +449,37 @@ export default function ClassFund() {
       {/* Status Section */}
       {activeTab === 'status' && (
         <div className="bg-surface border border-outline-variant/50 rounded-xl overflow-hidden shadow-sm mb-lg animate-[fadeIn_0.2s_ease-out]">
-          <div className="p-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-lowest">
-            <h3 className="font-title-md text-title-md text-on-surface font-bold">Status Pembayaran Uang Kas - {currentPeriod}</h3>
+          <div className="p-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-lowest flex-wrap gap-2">
+            <h3 className="font-title-md text-title-md text-on-surface font-bold">Status Pembayaran (Kumulatif s.d. {currentPeriod} {selectedYear})</h3>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-on-surface-variant bg-surface-variant/30 px-3 py-1.5 rounded-lg border border-outline-variant/30">
+                Tagihan Kumulatif: <span className="text-on-surface font-bold">{formatCurrency(cumulativeTarget)}</span>
+              </span>
+              {userType === 'admin' && (
+                <button 
+                  onClick={handleSetTargetKas}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant text-sm font-medium hover:bg-surface-variant/50 transition-colors"
+                  title="Atur target nominal kas bulan ini"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  Target {currentPeriod}: {formatCurrency(targetKasBulanIni)}
+                </button>
+              )}
+            </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-[400px]">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase border-b border-outline-variant/30">
                   <th className="p-4">Nama Siswa</th>
-                  <th className="p-4 text-center">Minggu 1</th>
-                  <th className="p-4 text-center">Minggu 2</th>
-                  <th className="p-4 text-center">Minggu 3</th>
-                  <th className="p-4 text-center">Minggu 4</th>
-                  <th className="p-4 text-center">Minggu 5</th>
-                  <th className="p-4">Total Bayar</th>
+                  <th className="p-4">Nilai Bayar</th>
                   <th className="p-4">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="p-8 text-center">
+                    <td colSpan="3" className="p-8 text-center">
                       <div className="flex justify-center">
                         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                       </div>
@@ -443,30 +489,26 @@ export default function ClassFund() {
                   studentPaymentStatus.map(student => (
                     <tr key={student.id} className="border-b border-outline-variant/30 hover:bg-surface-container-lowest/50 transition-colors">
                       <td className="p-4 font-title-sm text-on-surface">{student.name}</td>
-                      {[1, 2, 3, 4, 5].map(week => (
-                        <td key={week} className="p-4 text-center">
-                          {student.paidWeeks.includes(week) ? (
-                            <span className="material-symbols-outlined text-secondary text-[20px] font-bold">check_circle</span>
-                          ) : (
-                            <span className="material-symbols-outlined text-outline-variant/50 text-[20px]">horizontal_rule</span>
-                          )}
-                        </td>
-                      ))}
-                      <td className="p-4 font-body-sm text-on-surface">{formatCurrency(student.totalPaid)}</td>
+                      <td className="p-4 font-body-sm text-on-surface font-semibold text-secondary">
+                        {formatCurrency(student.totalPaid)}
+                      </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold border ${
-                          student.status === 'Lunas' 
-                            ? 'bg-secondary/10 text-secondary border-secondary/20' 
-                            : 'bg-error/10 text-error border-error/20'
-                        }`}>
-                          {student.status}
-                        </span>
+                        {student.isLunas ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold border bg-secondary/10 text-secondary border-secondary/20">
+                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                            Lunas {student.lebihnya > 0 ? `(Lebih ${formatCurrency(student.lebihnya)})` : ''}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[12px] font-bold text-error">
+                            {formatCurrency(student.kurangnya)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="p-8 text-center text-on-surface-variant font-body-md">
+                    <td colSpan="3" className="p-8 text-center text-on-surface-variant font-body-md">
                       Data siswa tidak ditemukan.
                     </td>
                   </tr>
@@ -490,8 +532,7 @@ export default function ClassFund() {
                 className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 p-1.5 rounded-full transition-colors"
                 onClick={() => {
                   setIsModalOpen(false);
-                  setSelectedWeeks([]);
-                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: '' });
+                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: monthNames[new Date().getMonth()] });
                 }}
               >
                 <span className="material-symbols-outlined">close</span>
@@ -586,49 +627,7 @@ export default function ClassFund() {
                 )}
 
                 <div>
-                  <label className="block font-label-md text-on-surface mb-1.5">Keterangan *</label>
-                  {formData.type === 'in' && (
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {[1, 2, 3, 4, 5].map(week => {
-                        const isPaid = alreadyPaidWeeks.includes(week);
-                        const isSelected = selectedWeeks.includes(week);
-                        
-                        let buttonStyle = 'bg-surface-container border-outline-variant text-on-surface-variant hover:bg-surface-container-high cursor-pointer';
-                        if (isPaid) {
-                          buttonStyle = 'bg-surface-variant/50 border-outline-variant/30 text-on-surface-variant/50 cursor-not-allowed opacity-60';
-                        } else if (isSelected) {
-                          buttonStyle = 'bg-primary/10 border-primary text-primary cursor-pointer';
-                        }
-
-                        return (
-                          <label key={week} className={`flex items-center gap-1.5 border rounded-md px-3 py-1.5 transition-colors ${buttonStyle}`} title={isPaid ? "Sudah dibayar" : ""}>
-                            <input 
-                              type="checkbox" 
-                              className="hidden"
-                              disabled={isPaid}
-                              checked={isSelected || isPaid}
-                              onChange={(e) => {
-                                if (isPaid) return;
-                                setSelectedWeeks(prev => {
-                                  const newWeeks = prev.includes(week) ? prev.filter(w => w !== week) : [...prev, week].sort();
-                                  if (newWeeks.length > 0) {
-                                    setFormData(d => ({ ...d, description: `Uang Kas Minggu ${newWeeks.join(', ')}` }));
-                                  } else {
-                                    setFormData(d => ({ ...d, description: '' }));
-                                  }
-                                  return newWeeks;
-                                });
-                              }}
-                            />
-                            <span className="font-label-sm flex items-center gap-1">
-                              Minggu {week} 
-                              {isPaid && <span className="material-symbols-outlined text-[14px]">check</span>}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <label className="block font-label-md text-on-surface mb-1.5">Keterangan (Opsional)</label>
                   {formData.type !== 'initial' && (
                     <input 
                       className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2.5 text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all placeholder:text-outline/60" 
@@ -637,7 +636,6 @@ export default function ClassFund() {
                       name="description"
                       value={formData.description}
                       onChange={handleInputChange}
-                      required
                     />
                   )}
                   {formData.type === 'initial' && (
@@ -683,8 +681,7 @@ export default function ClassFund() {
                 className="px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant font-label-md hover:bg-surface-variant/30 transition-colors"
                 onClick={() => {
                   setIsModalOpen(false);
-                  setSelectedWeeks([]);
-                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: '' });
+                  setFormData({ type: 'in', description: '', amount: '', date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0], student_id: '', period: monthNames[new Date().getMonth()] });
                 }}
               >
                 Batal

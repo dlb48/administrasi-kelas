@@ -7,6 +7,7 @@ export default function Attendance() {
   // Data State
   const [students, setStudents] = useState([]);
   const [attendanceData, setAttendanceData] = useState({}); // { student_id: 'H'|'S'|'I'|'A' }
+  const [hasExistingData, setHasExistingData] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -17,18 +18,59 @@ export default function Attendance() {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [rekapMonth, setRekapMonth] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 7)); // YYYY-MM
   const [rekapData, setRekapData] = useState([]); // List of attendance for the month
+  
+  // Holiday State
+  const [weeklyHoliday, setWeeklyHoliday] = useState('-1');
+  const [eventHolidays, setEventHolidays] = useState([]);
+  const [currentHolidayWarning, setCurrentHolidayWarning] = useState(null);
 
-  // Fetch students on mount
+  // Fetch students and holidays on mount
   useEffect(() => {
     fetchStudents();
+    fetchHolidays();
   }, []);
+
+  const fetchHolidays = async () => {
+    try {
+      const { data, error } = await supabase.from('holidays').select('*');
+      if (error) throw error;
+      if (data) {
+        const weekly = data.find(h => h.type === 'weekly');
+        setWeeklyHoliday(weekly ? weekly.day_of_week.toString() : '-1');
+        setEventHolidays(data.filter(h => h.type === 'event'));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const checkIfHoliday = (dateStr) => {
+    const d = new Date(dateStr);
+    const day = d.getDay().toString();
+    
+    // Check Event Holiday first
+    const eventHol = eventHolidays.find(h => h.date === dateStr);
+    if (eventHol) {
+      setCurrentHolidayWarning(`Hari ini libur: ${eventHol.description}`);
+      return;
+    }
+    
+    // Check Weekly Holiday
+    if (weeklyHoliday !== '-1' && weeklyHoliday === day) {
+      setCurrentHolidayWarning('Hari ini adalah Libur Mingguan rutin.');
+      return;
+    }
+    
+    setCurrentHolidayWarning(null);
+  };
 
   // Fetch attendance when date or tab changes
   useEffect(() => {
     if (activeTab === 'input' && students.length > 0) {
       fetchAttendance(currentDate);
+      checkIfHoliday(currentDate);
     }
-  }, [currentDate, activeTab, students]);
+  }, [currentDate, activeTab, students, weeklyHoliday, eventHolidays]);
 
   // Fetch rekap when month or selected student changes
   useEffect(() => {
@@ -71,15 +113,15 @@ export default function Attendance() {
         .eq('date', date);
         
       if (error) throw error;
-      
       const attMap = {};
       students.forEach(s => {
-        attMap[s.id] = 'H'; // Default to Hadir
+        attMap[s.id] = 'H'; // Default to Hadir untuk semua hari
       });
       data?.forEach(record => {
         attMap[record.student_id] = record.status;
       });
       setAttendanceData(attMap);
+      setHasExistingData(data && data.length > 0);
     } catch (error) {
       console.error('Error fetching attendance:', error.message);
     } finally {
@@ -162,15 +204,40 @@ export default function Attendance() {
         if (error) throw error;
       }
 
-      if (deleteIds.length > 0) {
-        const { error } = await supabase.from('attendance').delete().in('id', deleteIds);
+      if (upsertData.length > 0) {
+        const { error } = await supabase.from('attendance').upsert(upsertData);
         if (error) throw error;
       }
       
+      setHasExistingData(true);
       alert('Data presensi berhasil disimpan!');
     } catch (error) {
       console.error('Error saving attendance:', error.message);
       alert('Gagal menyimpan presensi: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteDailyAttendance = async () => {
+    if (!window.confirm(`Yakin ingin menghapus seluruh data presensi untuk tanggal ${formatDateIndo(currentDate)}? Anda harus menginput ulang dari awal.`)) return;
+    
+    try {
+      setIsSaving(true);
+      const { error } = await supabase.from('attendance').delete().eq('date', currentDate);
+      if (error) throw error;
+      
+      setHasExistingData(false);
+      const attMap = {};
+      students.forEach(s => {
+        attMap[s.id] = 'H'; // Reset to default
+      });
+      setAttendanceData(attMap);
+      
+      alert('Data presensi berhasil dihapus. Silakan input ulang jika diperlukan.');
+    } catch (error) {
+      console.error('Error deleting daily attendance:', error.message);
+      alert('Gagal menghapus presensi: ' + error.message);
     } finally {
       setIsSaving(false);
     }
@@ -251,18 +318,36 @@ export default function Attendance() {
     });
     
     for (let i = 1; i <= daysInMonth; i++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const d = new Date(year, month - 1, i);
+      const dayOfWeek = d.getDay().toString();
+      
+      const eventHol = eventHolidays.find(h => h.date === dateStr);
+      const isWeeklyHol = (weeklyHoliday !== '-1' && weeklyHoliday === dayOfWeek);
+      
       const status = dayMap[i];
       let bgClass = "hover:bg-surface-container-lowest border-outline-variant border";
+      let holidayDesc = null;
       
-      if (status === 'H') bgClass = "bg-emerald-100/80 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700 shadow-sm";
-      else if (status === 'S') bgClass = "bg-blue-100/80 text-blue-900 border-blue-300 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-700 shadow-sm";
-      else if (status === 'I') bgClass = "bg-amber-100/80 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700 shadow-sm";
-      else if (status === 'A') bgClass = "bg-red-100/80 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-100 dark:border-red-700 shadow-sm";
-      
+      if (eventHol) {
+        bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
+        holidayDesc = eventHol.description;
+      } else if (isWeeklyHol) {
+        bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
+      } else {
+        if (status === 'H') bgClass = "bg-emerald-100/80 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700 shadow-sm";
+        else if (status === 'S') bgClass = "bg-blue-100/80 text-blue-900 border-blue-300 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-700 shadow-sm";
+        else if (status === 'I') bgClass = "bg-amber-100/80 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700 shadow-sm";
+        else if (status === 'A') bgClass = "bg-red-100/80 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-100 dark:border-red-700 shadow-sm";
+      }
+
       grid.push(
-        <div key={`day-${i}`} className={`aspect-square rounded-md flex flex-col items-center justify-center transition-all ${bgClass}`}>
-          <span className={`font-title-md ${status ? 'text-[13px]' : 'text-sm'}`}>{i}</span>
-          {status && <span className="font-label-sm text-[10px] font-bold">{status}</span>}
+        <div key={`day-${i}`} className={`aspect-square rounded-md flex flex-col items-center justify-center transition-all ${bgClass} relative overflow-hidden p-0.5`}>
+          <span className={`font-title-md ${status || holidayDesc ? 'text-[12px] sm:text-[14px]' : 'text-sm'}`}>{i}</span>
+          {status && !holidayDesc && !isWeeklyHol && <span className="font-label-sm text-[10px] font-bold">{status}</span>}
+          {holidayDesc && (
+            <span className="text-[7px] sm:text-[9px] leading-tight px-0.5 text-center font-medium opacity-90 line-clamp-2">{holidayDesc}</span>
+          )}
         </div>
       );
     }
@@ -333,6 +418,18 @@ export default function Attendance() {
           {/* Input Harian Content */}
           {activeTab === 'input' && (
             <div className="flex-1 flex flex-col">
+              {currentHolidayWarning && (
+                <div className="bg-error-container text-on-error-container p-4 rounded-xl mb-md font-medium flex items-center shadow-sm">
+                  <span className="material-symbols-outlined align-middle mr-2">event_busy</span>
+                  {currentHolidayWarning} (Presensi dinonaktifkan)
+                </div>
+              )}
+              {!currentHolidayWarning && hasExistingData && (
+                <div className="bg-primary-container text-on-primary-container p-4 rounded-xl mb-md font-medium flex items-center shadow-sm">
+                  <span className="material-symbols-outlined align-middle mr-2">info</span>
+                  Presensi hari ini sudah disimpan. Hapus data terlebih dahulu jika ingin mengubahnya.
+                </div>
+              )}
               <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden flex-1 flex flex-col shadow-sm">
                 
                 {/* Table Header */}
@@ -374,19 +471,23 @@ export default function Attendance() {
                         <div className="col-span-4 flex justify-end sm:justify-center gap-2">
                           <button 
                             onClick={() => handleStatusChange(student.id, 'H')}
-                            className={getStatusChipClass(attendanceData[student.id] === 'H', 'H')}
+                            disabled={!!currentHolidayWarning || hasExistingData}
+                            className={getStatusChipClass(attendanceData[student.id] === 'H', 'H') + ((currentHolidayWarning || hasExistingData) ? ' opacity-50 cursor-not-allowed' : '')}
                           >H</button>
                           <button 
                             onClick={() => handleStatusChange(student.id, 'S')}
-                            className={getStatusChipClass(attendanceData[student.id] === 'S', 'S')}
+                            disabled={!!currentHolidayWarning || hasExistingData}
+                            className={getStatusChipClass(attendanceData[student.id] === 'S', 'S') + ((currentHolidayWarning || hasExistingData) ? ' opacity-50 cursor-not-allowed' : '')}
                           >S</button>
                           <button 
                             onClick={() => handleStatusChange(student.id, 'I')}
-                            className={getStatusChipClass(attendanceData[student.id] === 'I', 'I')}
+                            disabled={!!currentHolidayWarning || hasExistingData}
+                            className={getStatusChipClass(attendanceData[student.id] === 'I', 'I') + ((currentHolidayWarning || hasExistingData) ? ' opacity-50 cursor-not-allowed' : '')}
                           >I</button>
                           <button 
                             onClick={() => handleStatusChange(student.id, 'A')}
-                            className={getStatusChipClass(attendanceData[student.id] === 'A', 'A')}
+                            disabled={!!currentHolidayWarning || hasExistingData}
+                            className={getStatusChipClass(attendanceData[student.id] === 'A', 'A') + ((currentHolidayWarning || hasExistingData) ? ' opacity-50 cursor-not-allowed' : '')}
                           >A</button>
                         </div>
                       </div>
@@ -405,18 +506,33 @@ export default function Attendance() {
                     <span className="material-symbols-outlined text-[20px]">share</span>
                     Share ke WA
                   </button>
-                  <button 
-                    onClick={handleSaveAttendance}
-                    disabled={isSaving}
-                    className="bg-primary text-white font-title-lg text-title-lg px-xl py-md rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl flex items-center gap-sm disabled:opacity-70 active:scale-95"
-                  >
-                    {isSaving ? (
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[20px]">save</span>
-                    )}
-                    {isSaving ? 'Menyimpan...' : 'Simpan Presensi'}
-                  </button>
+                  {hasExistingData && !currentHolidayWarning ? (
+                    <button 
+                      onClick={handleDeleteDailyAttendance}
+                      disabled={isSaving}
+                      className="bg-error text-white font-title-lg text-title-lg px-xl py-md rounded-xl hover:bg-error/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      {isSaving ? (
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      )}
+                      {isSaving ? 'Menghapus...' : 'Hapus Presensi Hari Ini'}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleSaveAttendance}
+                      disabled={isSaving || !!currentHolidayWarning}
+                      className="bg-primary text-white font-title-lg text-title-lg px-xl py-md rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl flex items-center gap-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      {isSaving ? (
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      ) : (
+                        <span className="material-symbols-outlined text-[20px]">save</span>
+                      )}
+                      {isSaving ? 'Menyimpan...' : 'Simpan Presensi'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
