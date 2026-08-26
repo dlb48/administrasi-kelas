@@ -146,5 +146,11 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
   - Mengubah titik awal perhitungan komulatif target uang kas (akumulasi 4 minggu per bulan) dari yang sebelumnya kaku pada bulan berjalan, menjadi dinamis berdasarkan **Bulan Awal Kas** yang kini bisa disetel langsung oleh Admin dari halaman Pengaturan.
   - Logika tunggakan akan secara cerdas menghitung bulan-bulan sebelumnya (sejak "Bulan Awal Kas") hingga bulan saat ini, sehingga total tunggakan akumulatif tampil jauh lebih akurat jika ada siswa yang belum membayar berbulan-bulan.
 
+### 18. Penyatuan Form Login & Hak Akses Target Kas (v2.1.1)
+- **File:** `app/src/pages/Login.jsx`, `app/src/pages/ClassFund.jsx`
+- **Detail Perubahan:**
+  - **Single Input Login:** Menggabungkan formulir login Guru (Admin) dan Siswa menjadi satu input tanpa perlu menekan tombol *toggle* pilihan mode. Sistem kini dengan cerdas memverifikasi input dan login sesuai hak akses (Siswa terlebih dahulu, lalu Admin).
+  - **Akses Target Kas untuk Siswa:** Membuka akses tombol pengaturan "Target Kas Bulan Ini" pada menu Uang Kas, sehingga tombol tersebut tidak lagi terbatas hanya untuk Admin, melainkan juga muncul untuk siswa yang memiliki hak akses (role) `class_fund`.
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*
