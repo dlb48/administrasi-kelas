@@ -4,7 +4,6 @@ import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
-  const [loginMode, setLoginMode] = useState('admin'); // 'admin' atau 'siswa'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,56 +21,50 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     
-    if (loginMode === 'admin') {
-      const formattedEmail = username.includes('@') ? username : `${username}@kelas.com`;
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formattedEmail,
-        password: password,
-      });
+    // First, try to login as Siswa (Student)
+    const { data: studentData, error: studentError } = await supabase
+      .from('students')
+      .select('*')
+      .eq('nisn', username)
+      .eq('password', password)
+      .maybeSingle();
 
+    if (studentData) {
+      // Login Siswa Success
       setIsLoading(false);
+      setIsSuccess(true);
+      setToastMessage('Login Siswa berhasil. Mengalihkan...');
+      setShowToast(true);
+      loginStudent(studentData);
+      setTimeout(() => {
+        setShowToast(false);
+        navigate('/dashboard');
+      }, 1500);
+      return;
+    }
 
-      if (error) {
-        setIsSuccess(false);
-        setToastMessage('Username atau Password salah.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      } else {
-        setIsSuccess(true);
-        setToastMessage('Login Admin berhasil. Mengalihkan...');
-        setShowToast(true);
-        setTimeout(() => {
-          setShowToast(false);
-          navigate('/dashboard');
-        }, 1500);
-      }
+    // If Siswa login fails, try Admin login
+    const formattedEmail = username.includes('@') ? username : `${username}@kelas.com`;
+    const { error: adminError } = await supabase.auth.signInWithPassword({
+      email: formattedEmail,
+      password: password,
+    });
+
+    setIsLoading(false);
+
+    if (adminError) {
+      setIsSuccess(false);
+      setToastMessage('Username/NISN atau Password salah.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     } else {
-      // Login Siswa
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('nisn', username)
-        .eq('password', password)
-        .maybeSingle();
-
-      setIsLoading(false);
-        
-      if (error || !data) {
-        console.error("Student login error:", error);
-        setIsSuccess(false);
-        setToastMessage(error ? `DB Error: ${error.message}` : 'NISN atau Password salah.');
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      } else {
-        setIsSuccess(true);
-        setToastMessage('Login Siswa berhasil. Mengalihkan...');
-        setShowToast(true);
-        loginStudent(data);
-        setTimeout(() => {
-          setShowToast(false);
-          navigate('/dashboard');
-        }, 1500);
-      }
+      setIsSuccess(true);
+      setToastMessage('Login Admin berhasil. Mengalihkan...');
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        navigate('/dashboard');
+      }, 1500);
     }
   };
 
@@ -83,41 +76,22 @@ export default function Login() {
         <div className="bg-surface/95 backdrop-blur-xl border border-outline-variant rounded-xl p-lg md:p-xl shadow-[0_20px_25px_-5px_rgb(0,0,0,0.1)]">
           {/* Header */}
           <div className="text-center mb-xl">
-            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-md shadow-sm transition-colors ${loginMode === 'admin' ? 'bg-primary-container text-on-primary-container' : 'bg-secondary-container text-on-secondary-container'}`}>
-              <span className="material-symbols-outlined text-4xl filled-icon" data-icon={loginMode === 'admin' ? 'school' : 'badge'}>
-                {loginMode === 'admin' ? 'school' : 'badge'}
+            <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-md shadow-sm transition-colors bg-primary-container text-on-primary-container">
+              <span className="material-symbols-outlined text-4xl filled-icon" data-icon="school">
+                school
               </span>
             </div>
             <h1 className="font-headline-md text-headline-md text-on-surface mb-xs">{className}</h1>
             <p className="font-body-sm text-body-sm text-on-surface-variant">{schoolName}</p>
           </div>
           
-          {/* Mode Toggle */}
-          <div className="flex bg-surface-container-low rounded-lg p-1 mb-lg relative">
-            <div 
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-surface rounded-md shadow-sm transition-transform duration-300 ease-in-out ${loginMode === 'siswa' ? 'translate-x-full ml-1' : ''}`}
-            />
-            <button 
-              type="button"
-              className={`flex-1 py-2 font-label-md text-label-md z-10 rounded-md transition-colors ${loginMode === 'admin' ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
-              onClick={() => { setLoginMode('admin'); setUsername(''); setPassword(''); }}
-            >
-              Admin Guru
-            </button>
-            <button 
-              type="button"
-              className={`flex-1 py-2 font-label-md text-label-md z-10 rounded-md transition-colors ${loginMode === 'siswa' ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
-              onClick={() => { setLoginMode('siswa'); setUsername(''); setPassword(''); }}
-            >
-              Akses Siswa
-            </button>
-          </div>
+
 
           {/* Form */}
           <form className="space-y-md" onSubmit={handleLogin}>
             <div className="space-y-sm">
               <label className="block font-label-md text-label-md text-on-surface" htmlFor="username">
-                {loginMode === 'admin' ? 'Username / Email' : 'NISN'}
+                Username / NISN
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant" data-icon="person">person</span>
@@ -126,7 +100,7 @@ export default function Login() {
                   id="username" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder={loginMode === 'admin' ? 'Masukkan username admin' : 'Masukkan NISN Anda'} 
+                  placeholder="Masukkan username atau NISN" 
                   required 
                   type="text" 
                 />
@@ -142,7 +116,7 @@ export default function Login() {
                   id="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={loginMode === 'admin' ? 'Masukkan password' : 'Masukkan password (default 12345)'} 
+                  placeholder="Masukkan password" 
                   required 
                   type={showPassword ? 'text' : 'password'} 
                 />
@@ -164,7 +138,7 @@ export default function Login() {
                 type="submit"
                 disabled={isLoading}
               >
-                  {isLoading ? 'Memproses...' : (loginMode === 'admin' ? 'Masuk sebagai Admin' : 'Masuk sebagai Siswa')}
+                  {isLoading ? 'Memproses...' : 'Masuk'}
               </button>
             </div>
           </form>
@@ -180,7 +154,7 @@ export default function Login() {
         {/* Footer */}
         <footer className="mt-8 text-center pb-4">
           <p className="font-body-sm text-body-sm text-on-surface-variant/70">
-            Administrasi Kelas v2.0.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
+            Administrasi Kelas v2.1.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
           </p>
         </footer>
       </main>

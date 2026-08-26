@@ -257,7 +257,7 @@ export default function Layout() {
           {/* Footer */}
           <footer className="mt-8 pt-6 pb-2 text-center border-t border-outline-variant/30">
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Administrasi Kelas v2.0.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
+              Administrasi Kelas v2.1.1 Copyright &copy; 2026 Guru TKJ, All Rights Reserved
             </p>
           </footer>
         </main>

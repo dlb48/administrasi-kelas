@@ -3,7 +3,8 @@ import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ClassFund() {
-  const { userType } = useAuth();
+  const { userType, studentSession } = useAuth();
+  const hasClassFundAccess = userType === 'admin' || (userType === 'student' && studentSession?.role?.includes('class_fund'));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [students, setStudents] = useState([]);
@@ -455,7 +456,7 @@ export default function ClassFund() {
               <span className="text-sm font-medium text-on-surface-variant bg-surface-variant/30 px-3 py-1.5 rounded-lg border border-outline-variant/30">
                 Tagihan Kumulatif: <span className="text-on-surface font-bold">{formatCurrency(cumulativeTarget)}</span>
               </span>
-              {userType === 'admin' && (
+              {hasClassFundAccess && (
                 <button 
                   onClick={handleSetTargetKas}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant text-sm font-medium hover:bg-surface-variant/50 transition-colors"
