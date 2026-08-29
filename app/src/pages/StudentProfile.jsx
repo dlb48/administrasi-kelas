@@ -53,8 +53,10 @@ export default function StudentProfile() {
   const fetchAttendance = async () => {
     setLoading(true);
     try {
+      const [yearStr, monthStr] = selectedMonth.split('-');
+      const lastDay = new Date(parseInt(yearStr), parseInt(monthStr), 0).getDate();
       const startDate = `${selectedMonth}-01`;
-      const endDate = `${selectedMonth}-31`; 
+      const endDate = `${selectedMonth}-${lastDay}`; 
       
       const { data, error } = await supabase
         .from('attendance')
@@ -68,6 +70,7 @@ export default function StudentProfile() {
       setAttendanceData(data || []);
     } catch (error) {
       console.error('Error fetching attendance:', error.message);
+      setAttendanceData([]);
     } finally {
       setLoading(false);
     }

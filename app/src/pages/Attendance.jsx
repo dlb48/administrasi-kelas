@@ -141,8 +141,10 @@ export default function Attendance() {
   const fetchRekap = async (studentId, month) => {
     try {
       setIsLoading(true);
+      const [yearStr, monthStr] = month.split('-');
+      const lastDay = new Date(parseInt(yearStr), parseInt(monthStr), 0).getDate();
       const startDate = `${month}-01`;
-      const endDate = `${month}-31`; 
+      const endDate = `${month}-${lastDay}`; 
       
       const { data, error } = await supabase
         .from('attendance')
@@ -155,6 +157,7 @@ export default function Attendance() {
       setRekapData(data || []);
     } catch (error) {
       console.error('Error fetching rekap:', error.message);
+      setRekapData([]);
     } finally {
       setIsLoading(false);
     }
