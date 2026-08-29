@@ -152,5 +152,12 @@ Dokumen ini berisi ringkasan pembaruan dan fitur yang terakhir kali dikerjakan p
   - **Single Input Login:** Menggabungkan formulir login Guru (Admin) dan Siswa menjadi satu input tanpa perlu menekan tombol *toggle* pilihan mode. Sistem kini dengan cerdas memverifikasi input dan login sesuai hak akses (Siswa terlebih dahulu, lalu Admin).
   - **Akses Target Kas untuk Siswa:** Membuka akses tombol pengaturan "Target Kas Bulan Ini" pada menu Uang Kas, sehingga tombol tersebut tidak lagi terbatas hanya untuk Admin, melainkan juga muncul untuk siswa yang memiliki hak akses (role) `class_fund`.
 
+### 19. Konversi Web ke Aplikasi Mobile (APK)
+- **File:** `app/capacitor.config.json`, `app/src/main.jsx`, `app/src/App.jsx`, `app/vite.config.js`, `.github/workflows/build-apk.yml`
+- **Detail Perubahan:**
+  - **Integrasi Capacitor:** Mengemas aplikasi web menggunakan Capacitor agar dapat di-build menjadi aplikasi Android (.apk) secara mandiri.
+  - **Otomatisasi Build (GitHub Actions):** Membuat alur kerja (workflow) GitHub Actions yang bertugas mem-build file APK secara otomatis setiap kali ada perubahan kode yang di-push ke GitHub, meniadakan perlunya instalasi Android Studio yang berat di komputer lokal.
+  - **Perbaikan Bug Mobile:** Memperbaiki insiden layar putih (white screen) pada perangkat *mobile* dengan mengganti sistem navigasi dari `BrowserRouter` menjadi `HashRouter`, mengoreksi *base path* Vite ke relatif (`./`), dan memastikan variabel `.env` disuntikkan secara dinamis saat proses build di GitHub.
+
 ---
 *Catatan ini dibuat otomatis untuk menyimpan riwayat pengembangan fitur agar mudah dilanjutkan di sesi berikutnya.*
