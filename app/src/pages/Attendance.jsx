@@ -22,6 +22,7 @@ export default function Attendance() {
   // Holiday State
   const [weeklyHoliday, setWeeklyHoliday] = useState('-1');
   const [eventHolidays, setEventHolidays] = useState([]);
+  const [activityHolidays, setActivityHolidays] = useState([]);
   const [currentHolidayWarning, setCurrentHolidayWarning] = useState(null);
 
   // Fetch students and holidays on mount
@@ -38,6 +39,7 @@ export default function Attendance() {
         const weekly = data.find(h => h.type === 'weekly');
         setWeeklyHoliday(weekly ? weekly.day_of_week.toString() : '-1');
         setEventHolidays(data.filter(h => h.type === 'event'));
+        setActivityHolidays(data.filter(h => h.type === 'activity'));
       }
     } catch (e) {
       console.error(e);
@@ -51,7 +53,14 @@ export default function Attendance() {
     // Check Event Holiday first
     const eventHol = eventHolidays.find(h => h.date === dateStr);
     if (eventHol) {
-      setCurrentHolidayWarning(`Hari ini libur: ${eventHol.description}`);
+      setCurrentHolidayWarning(`Hari ini libur event: ${eventHol.description}`);
+      return;
+    }
+    
+    // Check Activity Holiday
+    const actHol = activityHolidays.find(h => h.date === dateStr);
+    if (actHol) {
+      setCurrentHolidayWarning(`Hari ini kegiatan sekolah: ${actHol.description}`);
       return;
     }
     
@@ -70,7 +79,7 @@ export default function Attendance() {
       fetchAttendance(currentDate);
       checkIfHoliday(currentDate);
     }
-  }, [currentDate, activeTab, students, weeklyHoliday, eventHolidays]);
+  }, [currentDate, activeTab, students, weeklyHoliday, eventHolidays, activityHolidays]);
 
   // Fetch rekap when month or selected student changes
   useEffect(() => {
@@ -323,6 +332,7 @@ export default function Attendance() {
       const dayOfWeek = d.getDay().toString();
       
       const eventHol = eventHolidays.find(h => h.date === dateStr);
+      const actHol = activityHolidays.find(h => h.date === dateStr);
       const isWeeklyHol = (weeklyHoliday !== '-1' && weeklyHoliday === dayOfWeek);
       
       const status = dayMap[i];
@@ -332,6 +342,9 @@ export default function Attendance() {
       if (eventHol) {
         bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
         holidayDesc = eventHol.description;
+      } else if (actHol) {
+        bgClass = "bg-tertiary/10 text-tertiary border-tertiary/30 dark:bg-tertiary/20 dark:text-tertiary-container shadow-sm";
+        holidayDesc = actHol.description;
       } else if (isWeeklyHol) {
         bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
       } else {
@@ -581,8 +594,8 @@ export default function Attendance() {
                       <div className="font-label-md text-label-md text-on-surface-variant py-2">Rab</div>
                       <div className="font-label-md text-label-md text-on-surface-variant py-2">Kam</div>
                       <div className="font-label-md text-label-md text-on-surface-variant py-2">Jum</div>
-                      <div className="font-label-md text-label-md text-error/80 py-2">Sab</div>
-                      <div className="font-label-md text-label-md text-error/80 py-2">Min</div>
+                      <div className="font-label-md text-label-md text-on-surface-variant py-2">Sab</div>
+                      <div className="font-label-md text-label-md text-on-surface-variant py-2">Min</div>
                       {renderCalendar()}
                     </div>
                   </>

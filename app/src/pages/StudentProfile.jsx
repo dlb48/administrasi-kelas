@@ -15,6 +15,30 @@ export default function StudentProfile() {
   // Class Fund State
   const [fundData, setFundData] = useState([]);
 
+  // Holiday State
+  const [weeklyHoliday, setWeeklyHoliday] = useState(null);
+  const [eventHolidays, setEventHolidays] = useState([]);
+  const [activityHolidays, setActivityHolidays] = useState([]);
+
+  useEffect(() => {
+    fetchHolidays();
+  }, []);
+
+  const fetchHolidays = async () => {
+    try {
+      const { data, error } = await supabase.from('holidays').select('*');
+      if (error) throw error;
+      if (data) {
+        const weekly = data.find(h => h.type === 'weekly');
+        if (weekly) setWeeklyHoliday(weekly.day_of_week);
+        setEventHolidays(data.filter(h => h.type === 'event'));
+        setActivityHolidays(data.filter(h => h.type === 'activity'));
+      }
+    } catch (error) {
+      console.error('Error fetching holidays:', error.message);
+    }
+  };
+
   // Fetch Data
   useEffect(() => {
     if (userType === 'student' && studentSession?.id) {
@@ -84,35 +108,80 @@ export default function StudentProfile() {
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // Calendar generation logic
-  const [yearStr, monthStr] = selectedMonth.split('-');
-  const year = parseInt(yearStr, 10);
-  const month = parseInt(monthStr, 10) - 1; 
-  
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = new Date(year, month, 1).getDay(); 
-  
-  const calendarDays = [];
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(null); 
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    calendarDays.push(i);
-  }
-
   const attendanceMap = {};
   attendanceData.forEach(att => {
     const day = parseInt(att.date.split('-')[2], 10);
     attendanceMap[day] = att.status;
   });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'H': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-      case 'S': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'I': return 'bg-amber-100 text-amber-800 border-amber-300';
-      case 'A': return 'bg-red-100 text-red-800 border-red-300';
-      default: return 'bg-surface text-on-surface';
+  const prevMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const d = new Date(year, month - 2, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const nextMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const d = new Date(year, month, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const renderCalendar = () => {
+    if (!selectedMonth) return null;
+    const [year, month] = selectedMonth.split('-').map(Number);
+    
+    // Day 0 is Sunday, 1 is Monday. We want Monday=0
+    let firstDay = new Date(year, month - 1, 1).getDay();
+    let startDay = firstDay === 0 ? 6 : firstDay - 1;
+    
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    const grid = [];
+    // Empty prefix cells
+    for (let i = 0; i < startDay; i++) {
+      grid.push(<div key={`empty-start-${i}`} className="aspect-square rounded-md flex items-center justify-center font-body-md bg-surface-container-lowest opacity-40 border border-outline-variant/30" />);
     }
+    
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const d = new Date(year, month - 1, i);
+      const dayOfWeek = d.getDay().toString();
+      
+      const eventHol = eventHolidays.find(h => h.date === dateStr);
+      const actHol = activityHolidays.find(h => h.date === dateStr);
+      const isWeeklyHol = (weeklyHoliday !== null && weeklyHoliday.toString() === dayOfWeek);
+      
+      const status = attendanceMap[i];
+      let bgClass = "hover:bg-surface-container-lowest border-outline-variant border";
+      let holidayDesc = null;
+      
+      if (eventHol) {
+        bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
+        holidayDesc = eventHol.description;
+      } else if (actHol) {
+        bgClass = "bg-tertiary/10 text-tertiary border-tertiary/30 dark:bg-tertiary/20 dark:text-tertiary-container shadow-sm";
+        holidayDesc = actHol.description;
+      } else if (isWeeklyHol) {
+        bgClass = "bg-error/10 text-error border-error/30 dark:bg-error/20 dark:text-error-container shadow-sm";
+      } else {
+        if (status === 'H') bgClass = "bg-emerald-100/80 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-700 shadow-sm";
+        else if (status === 'S') bgClass = "bg-blue-100/80 text-blue-900 border-blue-300 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-700 shadow-sm";
+        else if (status === 'I') bgClass = "bg-amber-100/80 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-100 dark:border-amber-700 shadow-sm";
+        else if (status === 'A') bgClass = "bg-red-100/80 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-100 dark:border-red-700 shadow-sm";
+      }
+
+      grid.push(
+        <div key={`day-${i}`} className={`aspect-square rounded-md flex flex-col items-center justify-center transition-all ${bgClass} relative overflow-hidden p-0.5`}>
+          <span className={`font-title-md ${status || holidayDesc || isWeeklyHol ? 'text-[12px] sm:text-[14px]' : 'text-sm'}`}>{i}</span>
+          {status && !holidayDesc && !isWeeklyHol && <span className="font-label-sm text-[10px] font-bold">{status}</span>}
+          {holidayDesc && (
+            <span className="text-[7px] sm:text-[9px] leading-tight px-0.5 text-center font-medium opacity-90 line-clamp-2">{holidayDesc}</span>
+          )}
+        </div>
+      );
+    }
+    
+    return grid;
   };
 
   return (
@@ -177,36 +246,7 @@ export default function StudentProfile() {
       {/* Konten Laporan Absensi */}
       {activeTab === 'attendance' && (
         <div className="animate-fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-lg gap-3">
-            <h2 className="font-headline-sm text-headline-sm text-on-surface hidden md:block">Kehadiran Bulanan</h2>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select 
-                className="bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all flex-1 sm:flex-none"
-                value={selectedMonth.split('-')[1]}
-                onChange={(e) => setSelectedMonth(`${selectedMonth.split('-')[0]}-${e.target.value}`)}
-              >
-                <option value="01">Januari</option>
-                <option value="02">Februari</option>
-                <option value="03">Maret</option>
-                <option value="04">April</option>
-                <option value="05">Mei</option>
-                <option value="06">Juni</option>
-                <option value="07">Juli</option>
-                <option value="08">Agustus</option>
-                <option value="09">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Desember</option>
-              </select>
-              <input 
-                type="number" 
-                className="bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all w-24"
-                value={selectedMonth.split('-')[0]}
-                onChange={(e) => setSelectedMonth(`${e.target.value}-${selectedMonth.split('-')[1]}`)}
-                placeholder="Tahun"
-              />
-            </div>
-          </div>
+          <h2 className="font-headline-sm text-headline-sm text-on-surface mb-lg hidden md:block">Kehadiran Bulanan</h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-surface border border-emerald-200 rounded-xl p-4 flex flex-col items-center justify-center">
@@ -229,36 +269,111 @@ export default function StudentProfile() {
 
           <div className="mt-8">
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Kalender Kehadiran</h3>
-            <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-              <div className="grid grid-cols-7 border-b border-outline-variant bg-surface-container-low">
-                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, idx) => (
-                  <div key={idx} className="p-3 text-center font-label-md text-label-md text-on-surface-variant">
-                    {day}
-                  </div>
-                ))}
+            <div className="bg-surface border border-outline-variant rounded-xl p-md sm:p-lg shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <button onClick={prevMonth} className="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors flex items-center justify-center">
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <div className="text-center font-title-lg text-title-lg text-on-surface">
+                  {new Date(selectedMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                </div>
+                <button onClick={nextMonth} className="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors flex items-center justify-center">
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
               </div>
-              <div className="grid grid-cols-7 gap-px bg-outline-variant/30 p-px">
-                {calendarDays.map((day, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`min-h-[70px] md:min-h-[90px] p-1.5 md:p-2 transition-colors ${day ? getStatusColor(attendanceMap[day]) : 'bg-surface-container-lowest/50'}`}
-                  >
-                    {day && (
-                      <div className="flex flex-col h-full relative">
-                        <span className={`font-label-md text-right ${attendanceMap[day] ? 'font-bold' : ''}`}>{day}</span>
-                        {attendanceMap[day] && (
-                          <span className="mt-auto text-center font-label-sm block px-1 py-0.5 rounded-md bg-white/50 dark:bg-black/20 mt-1 shadow-sm">
-                            {attendanceMap[day] === 'H' && 'Hadir'}
-                            {attendanceMap[day] === 'S' && 'Sakit'}
-                            {attendanceMap[day] === 'I' && 'Izin'}
-                            {attendanceMap[day] === 'A' && 'Alpa'}
-                          </span>
-                        )}
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center mb-md">
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Sen</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Sel</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Rab</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Kam</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Jum</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Sab</div>
+                <div className="font-label-md text-label-md text-on-surface-variant py-2">Min</div>
+                {renderCalendar()}
+              </div>
+              
+              {(() => {
+                const [yearStr, monthStr] = selectedMonth.split('-');
+                
+                const groupHolidays = (holidays) => {
+                  const currentMonthHolidays = holidays.filter(h => h.date.startsWith(`${yearStr}-${monthStr}`));
+                  const groups = [];
+                  let currentGroup = null;
+                  
+                  [...currentMonthHolidays].sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(e => {
+                    if (!currentGroup || currentGroup.description !== e.description) {
+                      if (currentGroup) groups.push(currentGroup);
+                      currentGroup = { description: e.description, start: e.date, end: e.date };
+                    } else {
+                      const lastDate = new Date(currentGroup.end);
+                      lastDate.setDate(lastDate.getDate() + 1);
+                      if (e.date === lastDate.toISOString().split('T')[0]) {
+                        currentGroup.end = e.date;
+                      } else {
+                        groups.push(currentGroup);
+                        currentGroup = { description: e.description, start: e.date, end: e.date };
+                      }
+                    }
+                  });
+                  if (currentGroup) groups.push(currentGroup);
+                  return groups;
+                };
+
+                const eventGroups = groupHolidays(eventHolidays);
+                const activityGroups = groupHolidays(activityHolidays);
+
+                if (eventGroups.length === 0 && activityGroups.length === 0) return null;
+
+                return (
+                  <div className="mt-4 border-t border-outline-variant pt-4 flex flex-col gap-4">
+                    {eventGroups.length > 0 && (
+                      <div>
+                        <ul className="grid grid-cols-[auto_auto_auto_1fr] gap-x-2 gap-y-1.5 pl-1 items-start">
+                          {eventGroups.map((g, idx) => {
+                             const startD = new Date(g.start);
+                             const endD = new Date(g.end);
+                             const dateText = g.start === g.end 
+                               ? `${startD.getDate()} ${startD.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+                               : `${startD.getDate()}-${endD.getDate()} ${startD.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+                               
+                             return (
+                               <div key={idx} className="contents text-[10px] sm:text-xs text-on-surface-variant">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-error mt-1.5"></span>
+                                 <span className="font-medium text-error whitespace-nowrap">{dateText}</span>
+                                 <span>-</span>
+                                 <span>{g.description}</span>
+                               </div>
+                             );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {activityGroups.length > 0 && (
+                      <div>
+                        <ul className="grid grid-cols-[auto_auto_auto_1fr] gap-x-2 gap-y-1.5 pl-1 items-start">
+                          {activityGroups.map((g, idx) => {
+                             const startD = new Date(g.start);
+                             const endD = new Date(g.end);
+                             const dateText = g.start === g.end 
+                               ? `${startD.getDate()} ${startD.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+                               : `${startD.getDate()}-${endD.getDate()} ${startD.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+                               
+                             return (
+                               <div key={idx} className="contents text-[10px] sm:text-xs text-on-surface-variant">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-tertiary mt-1.5"></span>
+                                 <span className="font-medium text-tertiary whitespace-nowrap">{dateText}</span>
+                                 <span>-</span>
+                                 <span>{g.description}</span>
+                               </div>
+                             );
+                          })}
+                        </ul>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           </div>
         </div>

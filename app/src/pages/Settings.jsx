@@ -18,8 +18,14 @@ export default function Settings() {
   const [weeklyHoliday, setWeeklyHoliday] = useState('-1');
   const [weeklyHolidayId, setWeeklyHolidayId] = useState(null);
   const [eventHolidays, setEventHolidays] = useState([]);
+  const [activityHolidays, setActivityHolidays] = useState([]);
+  
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventDesc, setNewEventDesc] = useState('');
+  
+  const [newActivityStartDate, setNewActivityStartDate] = useState('');
+  const [newActivityEndDate, setNewActivityEndDate] = useState('');
+  const [newActivityDesc, setNewActivityDesc] = useState('');
   const [holidayMessage, setHolidayMessage] = useState('');
 
   const [classMessage, setClassMessage] = useState('');
@@ -58,6 +64,7 @@ export default function Settings() {
             setWeeklyHolidayId(weekly.id);
           }
           setEventHolidays(holidaysData.filter(h => h.type === 'event'));
+          setActivityHolidays(holidaysData.filter(h => h.type === 'activity'));
         }
       } catch (error) {
         console.error('Error fetching data:', error.message);
@@ -186,6 +193,47 @@ export default function Settings() {
     }
   };
 
+  const handleAddActivityHoliday = async (e) => {
+    e.preventDefault();
+    if (!newActivityStartDate || !newActivityDesc.trim()) return;
+    setHolidayMessage('');
+    
+    try {
+      let datesToInsert = [];
+      const start = new Date(newActivityStartDate);
+      const end = newActivityEndDate ? new Date(newActivityEndDate) : new Date(newActivityStartDate);
+      
+      if (end < start) {
+        setHolidayMessage('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
+        return;
+      }
+
+      let current = new Date(start);
+      while (current <= end) {
+        datesToInsert.push({
+          type: 'activity',
+          date: current.toISOString().split('T')[0],
+          description: newActivityDesc
+        });
+        current.setDate(current.getDate() + 1);
+      }
+
+      const { data, error } = await supabase.from('holidays').insert(datesToInsert).select();
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setActivityHolidays([...activityHolidays, ...data].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        setNewActivityStartDate('');
+        setNewActivityEndDate('');
+        setNewActivityDesc('');
+      }
+      setHolidayMessage('Kegiatan sekolah berhasil ditambahkan!');
+    } catch (error) {
+      setHolidayMessage('Gagal menambah kegiatan sekolah: ' + error.message);
+    }
+  };
+
   const handleDeleteEventHoliday = async (id) => {
     if (!window.confirm('Yakin ingin menghapus libur event ini?')) return;
     setHolidayMessage('');
@@ -197,6 +245,44 @@ export default function Settings() {
     } catch (error) {
       setHolidayMessage('Gagal menghapus libur event: ' + error.message);
     }
+  };
+
+  const handleDeleteActivityGroup = async (ids) => {
+    if (!window.confirm('Yakin ingin menghapus kegiatan ini?')) return;
+    setHolidayMessage('');
+    try {
+      const { error } = await supabase.from('holidays').delete().in('id', ids);
+      if (error) throw error;
+      setActivityHolidays(activityHolidays.filter(h => !ids.includes(h.id)));
+      setHolidayMessage('Kegiatan sekolah dihapus.');
+    } catch (error) {
+      setHolidayMessage('Gagal menghapus kegiatan: ' + error.message);
+    }
+  };
+
+  const groupEvents = (events) => {
+    const groups = [];
+    let currentGroup = null;
+
+    events.forEach(e => {
+      if (!currentGroup || currentGroup.description !== e.description) {
+        if (currentGroup) groups.push(currentGroup);
+        currentGroup = { description: e.description, start: e.date, end: e.date, ids: [e.id] };
+      } else {
+        const lastDate = new Date(currentGroup.end);
+        lastDate.setDate(lastDate.getDate() + 1);
+        const expectedNext = lastDate.toISOString().split('T')[0];
+        if (e.date === expectedNext) {
+          currentGroup.end = e.date;
+          currentGroup.ids.push(e.id);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = { description: e.description, start: e.date, end: e.date, ids: [e.id] };
+        }
+      }
+    });
+    if (currentGroup) groups.push(currentGroup);
+    return groups;
   };
 
   if (loading) {
@@ -378,7 +464,7 @@ export default function Settings() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
             {/* Libur Mingguan */}
             <div className="border border-outline-variant/50 rounded-lg p-md bg-surface-container-lowest">
               <h3 className="font-title-md text-title-md font-bold text-on-surface mb-sm">Libur Mingguan (Rutin)</h3>
@@ -405,7 +491,7 @@ export default function Settings() {
 
             {/* Libur Event */}
             <div className="border border-outline-variant/50 rounded-lg p-md bg-surface-container-lowest">
-              <h3 className="font-title-md text-title-md font-bold text-on-surface mb-sm">Libur Event (Insidental)</h3>
+              <h3 className="font-title-md text-title-md font-bold text-on-surface mb-sm">Libur Event (Nasional/Insidental)</h3>
               <form onSubmit={handleAddEventHoliday} className="flex flex-col gap-sm mb-md">
                 <input 
                   type="date"
@@ -416,18 +502,18 @@ export default function Settings() {
                 />
                 <input 
                   type="text"
-                  placeholder="Keterangan (misal: Cuti Bersama)"
+                  placeholder="Keterangan (misal: Hari Kemerdekaan)"
                   value={newEventDesc}
                   onChange={(e) => setNewEventDesc(e.target.value)}
                   className="px-md py-sm rounded-md border border-outline-variant bg-surface text-on-surface focus:border-primary focus:outline-none w-full text-sm"
                   required
                 />
                 <button type="submit" className="px-md py-sm bg-primary/10 text-primary rounded-md hover:bg-primary/20 font-medium transition-colors mt-2 text-sm flex items-center justify-center gap-1">
-                  <span className="material-symbols-outlined text-[16px]">add</span> Tambah
+                  <span className="material-symbols-outlined text-[16px]">add</span> Tambah Libur
                 </button>
               </form>
 
-              <div className="max-h-[150px] overflow-y-auto divide-y divide-outline-variant">
+              <div className="max-h-[250px] overflow-y-auto divide-y divide-outline-variant custom-scrollbar pr-2">
                 {eventHolidays.length === 0 ? (
                   <p className="text-sm text-on-surface-variant italic py-2 text-center">Belum ada libur event.</p>
                 ) : (
@@ -438,6 +524,68 @@ export default function Settings() {
                         <span className="text-xs text-on-surface-variant">{h.description}</span>
                       </div>
                       <button type="button" onClick={() => handleDeleteEventHoliday(h.id)} className="text-outline hover:text-error">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Kegiatan Sekolah */}
+            <div className="border border-outline-variant/50 rounded-lg p-md bg-surface-container-lowest">
+              <h3 className="font-title-md text-title-md font-bold text-on-surface mb-sm">Kegiatan Sekolah (UAS/UTS dll)</h3>
+              <form onSubmit={handleAddActivityHoliday} className="flex flex-col gap-sm mb-md">
+                <div className="flex gap-2">
+                  <div className="flex flex-col w-1/2">
+                    <label className="text-xs text-on-surface-variant mb-1">Mulai</label>
+                    <input 
+                      type="date"
+                      value={newActivityStartDate}
+                      onChange={(e) => setNewActivityStartDate(e.target.value)}
+                      className="px-md py-sm rounded-md border border-outline-variant bg-surface text-on-surface focus:border-primary focus:outline-none w-full text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col w-1/2">
+                    <label className="text-xs text-on-surface-variant mb-1">Selesai (Opsional)</label>
+                    <input 
+                      type="date"
+                      value={newActivityEndDate}
+                      onChange={(e) => setNewActivityEndDate(e.target.value)}
+                      className="px-md py-sm rounded-md border border-outline-variant bg-surface text-on-surface focus:border-primary focus:outline-none w-full text-sm"
+                    />
+                  </div>
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Keterangan (misal: UAS Semester 1)"
+                  value={newActivityDesc}
+                  onChange={(e) => setNewActivityDesc(e.target.value)}
+                  className="px-md py-sm rounded-md border border-outline-variant bg-surface text-on-surface focus:border-primary focus:outline-none w-full text-sm mt-1"
+                  required
+                />
+                <button type="submit" className="px-md py-sm bg-primary/10 text-primary rounded-md hover:bg-primary/20 font-medium transition-colors mt-2 text-sm flex items-center justify-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]">add</span> Tambah Kegiatan
+                </button>
+              </form>
+
+              <div className="max-h-[250px] overflow-y-auto divide-y divide-outline-variant custom-scrollbar pr-2">
+                {activityHolidays.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant italic py-2 text-center">Belum ada kegiatan sekolah.</p>
+                ) : (
+                  groupEvents(activityHolidays).map((g, idx) => (
+                    <div key={idx} className="py-2 flex justify-between items-center gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-on-surface">
+                          {g.start === g.end 
+                            ? new Date(g.start).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})
+                            : `${new Date(g.start).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})} - ${new Date(g.end).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`
+                          }
+                        </span>
+                        <span className="text-xs text-on-surface-variant text-tertiary">{g.description}</span>
+                      </div>
+                      <button type="button" onClick={() => handleDeleteActivityGroup(g.ids)} className="text-outline hover:text-error">
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
                     </div>
