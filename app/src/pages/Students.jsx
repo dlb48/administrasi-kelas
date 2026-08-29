@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
+import * as XLSX from 'xlsx';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -357,32 +358,23 @@ export default function Students() {
     
     const rows = students.map((s, idx) => [
       idx + 1,
-      `"${s.name}"`,
-      `"${s.nisn}"`,
+      s.name,
+      s.nisn,
       s.gender,
-      `"${s.student_phone || ''}"`,
-      `"${s.parent_phone || ''}"`,
-      `"${s.password || ''}"`,
-      `"${s.role || ''}"`
+      s.student_phone || '',
+      s.parent_phone || '',
+      s.password || '',
+      s.role || ''
     ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(e => e.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Siswa");
     
     const today = new Date();
     const dateStr = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`;
-    link.setAttribute('download', `Data_Siswa_${dateStr}.csv`);
+    XLSX.writeFile(workbook, `Data_Siswa_${dateStr}.xlsx`);
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     setOpenImportDropdown(false);
   };
 

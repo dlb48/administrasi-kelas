@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Reports() {
@@ -39,12 +40,14 @@ export default function Reports() {
 
     let headers = [];
     let rows = [];
+    let sheetName = "";
 
     if (activeTab === 'attendance') {
+      sheetName = "Laporan Kehadiran";
       headers = ['No', 'Nama Siswa', 'Hadir', 'Sakit', 'Izin', 'Alpa', 'Total Presensi'];
       rows = attendanceReport.map((student, index) => [
         index + 1,
-        `"${student.name}"`,
+        student.name,
         student.summary.H,
         student.summary.S,
         student.summary.I,
@@ -52,34 +55,26 @@ export default function Reports() {
         student.summary.total
       ]);
     } else {
+      sheetName = "Laporan Kas Kelas";
       headers = ['No', 'Nama Siswa', 'Total Kas (Rp)', 'Status'];
       rows = attendanceReport.map((student, index) => [
         index + 1,
-        `"${student.name}"`,
+        student.name,
         student.totalPaid,
         student.isLunas ? 'Lunas' : 'Belum Lunas'
       ]);
     }
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(e => e.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     
-    const link = document.createElement('a');
-    link.href = url;
     const startObj = new Date(startDate);
     const endObj = new Date(endDate);
     const startStr = `${startObj.getDate()}_${monthNames[startObj.getMonth()]}_${startObj.getFullYear()}`;
     const endStr = `${endObj.getDate()}_${monthNames[endObj.getMonth()]}_${endObj.getFullYear()}`;
-    link.setAttribute('download', `Laporan_Siswa_${startStr}_sd_${endStr}.csv`);
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(workbook, `Laporan_Siswa_${startStr}_sd_${endStr}.xlsx`);
   };
 
   const fetchStudents = async () => {
