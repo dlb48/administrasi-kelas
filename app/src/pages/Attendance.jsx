@@ -53,7 +53,7 @@ export default function Attendance() {
     // Check Event Holiday first
     const eventHol = eventHolidays.find(h => h.date === dateStr);
     if (eventHol) {
-      setCurrentHolidayWarning(`Hari ini libur event: ${eventHol.description}`);
+      setCurrentHolidayWarning(`Hari ini libur: ${eventHol.description}`);
       return;
     }
     

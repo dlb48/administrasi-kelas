@@ -41,7 +41,9 @@ export default function Dashboard() {
     totalPemasukan: 0,
     totalPengeluaran: 0,
     tunggakan: [],
-    absenHariIni: []
+    absenHariIni: [],
+    isHoliday: false,
+    holidayDesc: ''
   });
 
   const today = new Date();
@@ -84,6 +86,30 @@ export default function Dashboard() {
              }
            }
         });
+      }
+
+      // 2.5 Fetch Holidays
+      const { data: holidayData } = await supabase.from('holidays').select('*');
+      let isHoliday = false;
+      let holidayDesc = '';
+      if (holidayData) {
+        const d = new Date();
+        const dayOfWeek = d.getDay().toString();
+        
+        const eventHol = holidayData.find(h => h.type === 'event' && h.date === todayYMD);
+        const actHol = holidayData.find(h => h.type === 'activity' && h.date === todayYMD);
+        const weeklyHol = holidayData.find(h => h.type === 'weekly' && h.day_of_week?.toString() === dayOfWeek);
+        
+        if (eventHol) {
+          isHoliday = true;
+          holidayDesc = `Libur: ${eventHol.description}`;
+        } else if (actHol) {
+          isHoliday = true;
+          holidayDesc = `Kegiatan Sekolah: ${actHol.description}`;
+        } else if (weeklyHol) {
+          isHoliday = true;
+          holidayDesc = 'Libur Akhir Pekan';
+        }
       }
 
       // 3. Fetch Class Funds (Saldo & Aktivitas)
@@ -151,7 +177,9 @@ export default function Dashboard() {
         totalPemasukan: totalIncome,
         totalPengeluaran: totalExpense,
         tunggakan: tunggakanList,
-        absenHariIni
+        absenHariIni,
+        isHoliday,
+        holidayDesc
       });
       
     } catch (e) {
@@ -201,7 +229,12 @@ export default function Dashboard() {
           {/* Siswa Tidak Hadir */}
           <div className="md:col-span-2 bg-surface p-lg rounded-xl border border-outline-variant shadow-sm h-fit">
             <h3 className="font-title-lg text-title-lg text-on-surface mb-md">Siswa Tidak Hadir Hari Ini</h3>
-            {stats.absenHariIni.length === 0 ? (
+            {stats.isHoliday ? (
+              <div className="text-center py-4 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
+                <span className="material-symbols-outlined text-[48px] text-tertiary mb-2 opacity-80">event_busy</span>
+                <p className="text-on-surface font-body-lg font-bold">{stats.holidayDesc}</p>
+              </div>
+            ) : stats.absenHariIni.length === 0 ? (
               <p className="text-on-surface-variant font-body-sm text-center py-4">Semua siswa hadir hari ini!</p>
             ) : (
               <div className="space-y-sm">
