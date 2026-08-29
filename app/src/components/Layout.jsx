@@ -134,7 +134,7 @@ export default function Layout() {
               <span className="font-label-md text-label-md">Class Fund</span>
             </Link>
           )}
-          {hasAccess('reports') && (
+          {(hasAccess('reports') || hasAccess('report_attendance') || hasAccess('report_class_fund')) && (
             <Link to="/reports" className={getLinkClass('/reports')}>
               <span className="material-symbols-outlined" data-icon="assessment">assessment</span>
               <span className="font-label-md text-label-md">Reports</span>

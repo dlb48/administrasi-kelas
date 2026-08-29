@@ -848,7 +848,8 @@ export default function Students() {
                       { id: 'students', label: 'Data Siswa (Students)' },
                       { id: 'attendance', label: 'Presensi (Kehadiran)' },
                       { id: 'class_fund', label: 'Uang Kas' },
-                      { id: 'reports', label: 'Laporan Kelas' }
+                      { id: 'report_attendance', label: 'Laporan Kehadiran' },
+                      { id: 'report_class_fund', label: 'Laporan Kas Kelas' }
                     ].map(menu => (
                       <label key={menu.id} className="flex items-center gap-2 cursor-pointer">
                         <input
