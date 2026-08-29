@@ -347,6 +347,45 @@ export default function Students() {
     }
   };
   
+  const downloadCSV = () => {
+    if (students.length === 0) {
+      alert("Belum ada data siswa untuk di-download.");
+      return;
+    }
+
+    const headers = ['No', 'Nama Siswa', 'NISN', 'Jenis Kelamin', 'No WA Siswa', 'No WA Orang Tua', 'Password', 'Hak Akses'];
+    
+    const rows = students.map((s, idx) => [
+      idx + 1,
+      `"${s.name}"`,
+      `"${s.nisn}"`,
+      s.gender,
+      `"${s.student_phone || ''}"`,
+      `"${s.parent_phone || ''}"`,
+      `"${s.password || ''}"`,
+      `"${s.role || ''}"`
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(e => e.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const today = new Date();
+    const dateStr = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`;
+    link.setAttribute('download', `Data_Siswa_${dateStr}.csv`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setOpenImportDropdown(false);
+  };
+
   // 1. Filter students logic
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -404,12 +443,18 @@ export default function Students() {
           </button>
           {openImportDropdown && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-outline-variant rounded-md shadow-lg py-1 z-10 flex flex-col">
+              <button 
+                onClick={downloadCSV}
+                className="px-4 py-2 text-left text-body-sm text-on-surface hover:bg-surface-variant/50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">download</span> Download Data
+              </button>
               <a 
                 href="/contoh_data_siswa.csv" download
                 className="px-4 py-2 text-left text-body-sm text-on-surface hover:bg-surface-variant/50 flex items-center gap-2"
                 onClick={() => setOpenImportDropdown(false)}
               >
-                <span className="material-symbols-outlined text-[18px]">download</span> Template
+                <span className="material-symbols-outlined text-[18px]">description</span> Template CSV
               </a>
               <button 
                 onClick={() => {
@@ -446,19 +491,25 @@ export default function Students() {
             className="flex items-center gap-2 border border-outline-variant text-on-surface-variant px-4 py-2 rounded-full font-label-md text-label-md hover:bg-surface-variant/30 transition-colors shadow-sm"
             onClick={() => setOpenImportDropdown(!openImportDropdown)}
           >
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            Import CSV
+            <span className="material-symbols-outlined text-[18px]">file_download</span>
+            Opsi CSV
             <span className="material-symbols-outlined text-[18px]">{openImportDropdown ? 'arrow_drop_up' : 'arrow_drop_down'}</span>
           </button>
           
           {openImportDropdown && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-outline-variant rounded-md shadow-lg py-1 z-10 flex flex-col">
+              <button 
+                onClick={downloadCSV}
+                className="px-4 py-2 text-left text-body-sm text-on-surface hover:bg-surface-variant/50 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">download</span> Download Data
+              </button>
               <a 
                 href="/contoh_data_siswa.csv" download
                 className="px-4 py-2 text-left text-body-sm text-on-surface hover:bg-surface-variant/50 flex items-center gap-2"
                 onClick={() => setOpenImportDropdown(false)}
               >
-                <span className="material-symbols-outlined text-[18px]">download</span> Download Template
+                <span className="material-symbols-outlined text-[18px]">description</span> Template CSV
               </a>
               <button 
                 onClick={() => {
