@@ -29,6 +29,9 @@ jobs:
 
       - name: Build Web App
         working-directory: ./app
+        env:
+          VITE_SUPABASE_URL: https://jmxsozljiqccuffnweyq.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_EZov8cR1UScU0vHxA-X1UA_tUx1Bd0h
         run: npm run build
 
       - name: Sync Capacitor
