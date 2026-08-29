@@ -83,6 +83,38 @@ export default function StudentProfile() {
   const formatCurrency = (amount) => 'Rp ' + amount.toLocaleString('id-ID');
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  // Calendar generation logic
+  const [yearStr, monthStr] = selectedMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10) - 1; 
+  
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+  
+  const calendarDays = [];
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    calendarDays.push(null); 
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    calendarDays.push(i);
+  }
+
+  const attendanceMap = {};
+  attendanceData.forEach(att => {
+    const day = parseInt(att.date.split('-')[2], 10);
+    attendanceMap[day] = att.status;
+  });
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'H': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'S': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'I': return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'A': return 'bg-red-100 text-red-800 border-red-300';
+      default: return 'bg-surface text-on-surface';
+    }
+  };
+
   return (
     <div className="p-margin-mobile md:p-margin-desktop animate-fade-in-up max-w-4xl mx-auto">
       
@@ -192,6 +224,41 @@ export default function StudentProfile() {
             <div className="bg-surface border border-red-200 rounded-xl p-4 flex flex-col items-center justify-center">
               <span className="font-headline-md text-headline-md text-red-600 mb-1">{attA}</span>
               <span className="font-label-md text-label-md text-red-600/80">Alpa</span>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Kalender Kehadiran</h3>
+            <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+              <div className="grid grid-cols-7 border-b border-outline-variant bg-surface-container-low">
+                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, idx) => (
+                  <div key={idx} className="p-3 text-center font-label-md text-label-md text-on-surface-variant">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-px bg-outline-variant/30 p-px">
+                {calendarDays.map((day, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`min-h-[70px] md:min-h-[90px] p-1.5 md:p-2 transition-colors ${day ? getStatusColor(attendanceMap[day]) : 'bg-surface-container-lowest/50'}`}
+                  >
+                    {day && (
+                      <div className="flex flex-col h-full relative">
+                        <span className={`font-label-md text-right ${attendanceMap[day] ? 'font-bold' : ''}`}>{day}</span>
+                        {attendanceMap[day] && (
+                          <span className="mt-auto text-center font-label-sm block px-1 py-0.5 rounded-md bg-white/50 dark:bg-black/20 mt-1 shadow-sm">
+                            {attendanceMap[day] === 'H' && 'Hadir'}
+                            {attendanceMap[day] === 'S' && 'Sakit'}
+                            {attendanceMap[day] === 'I' && 'Izin'}
+                            {attendanceMap[day] === 'A' && 'Alpa'}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
