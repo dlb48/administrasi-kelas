@@ -9,7 +9,7 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(false);
   
   // Attendance State
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().substring(0, 7)); // YYYY-MM
   const [attendanceData, setAttendanceData] = useState([]);
   
   // Class Fund State

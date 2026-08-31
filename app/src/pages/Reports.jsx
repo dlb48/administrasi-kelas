@@ -5,8 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Reports() {
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-  const currentDay = today.toISOString().split('T')[0];
+  const firstDayObj = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstDay = new Date(firstDayObj.getTime() - firstDayObj.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const currentDay = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(currentDay);
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];

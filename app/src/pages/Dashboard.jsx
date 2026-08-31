@@ -50,7 +50,7 @@ export default function Dashboard() {
   const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = today.toLocaleDateString('id-ID', dateOptions);
   
-  const todayYMD = today.toISOString().split('T')[0];
+  const todayYMD = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const currentMonthName = monthNames[today.getMonth()];
   const currentYear = today.getFullYear().toString();
