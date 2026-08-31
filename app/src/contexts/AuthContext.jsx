@@ -73,6 +73,10 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
     localStorage.removeItem('studentSession');
     setStudentSession(null);
+    import('@capacitor/preferences').then(({ Preferences }) => {
+      Preferences.remove({ key: 'rememberedUsername' });
+      Preferences.remove({ key: 'rememberedPassword' });
+    }).catch(() => {});
   };
 
   const value = {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { Preferences } from '@capacitor/preferences';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -11,26 +12,54 @@ export default function Login() {
   const [toastMessage, setToastMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
   const { loginStudent, appSettings } = useAuth();
   
   const className = appSettings?.className || 'XII RPL 1';
   const schoolName = appSettings?.schoolName || 'Aplikasi Administrasi Kelas';
 
+  useEffect(() => {
+    const checkRememberMe = async () => {
+      const { value: remUser } = await Preferences.get({ key: 'rememberedUsername' });
+      const { value: remPass } = await Preferences.get({ key: 'rememberedPassword' });
+      
+      if (remUser && remPass) {
+        setUsername(remUser);
+        setPassword(remPass);
+        setRememberMe(true);
+        // Automatically attempt login
+        performLogin(remUser, remPass);
+      }
+    };
+    checkRememberMe();
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    await performLogin(username, password);
+  };
+
+  const performLogin = async (userValue, passValue) => {
     setIsLoading(true);
     
     // First, try to login as Siswa (Student)
     const { data: studentData, error: studentError } = await supabase
       .from('students')
       .select('*')
-      .eq('nisn', username)
-      .eq('password', password)
+      .eq('nisn', userValue)
+      .eq('password', passValue)
       .maybeSingle();
 
     if (studentData) {
       // Login Siswa Success
+      if (rememberMe) {
+        await Preferences.set({ key: 'rememberedUsername', value: userValue });
+        await Preferences.set({ key: 'rememberedPassword', value: passValue });
+      } else {
+        await Preferences.remove({ key: 'rememberedUsername' });
+        await Preferences.remove({ key: 'rememberedPassword' });
+      }
       setIsLoading(false);
       setIsSuccess(true);
       setToastMessage('Login Siswa berhasil. Mengalihkan...');
@@ -44,10 +73,10 @@ export default function Login() {
     }
 
     // If Siswa login fails, try Admin login
-    const formattedEmail = username.includes('@') ? username : `${username}@kelas.com`;
+    const formattedEmail = userValue.includes('@') ? userValue : `${userValue}@kelas.com`;
     const { error: adminError } = await supabase.auth.signInWithPassword({
       email: formattedEmail,
-      password: password,
+      password: passValue,
     });
 
     setIsLoading(false);
@@ -58,6 +87,13 @@ export default function Login() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } else {
+      if (rememberMe) {
+        await Preferences.set({ key: 'rememberedUsername', value: userValue });
+        await Preferences.set({ key: 'rememberedPassword', value: passValue });
+      } else {
+        await Preferences.remove({ key: 'rememberedUsername' });
+        await Preferences.remove({ key: 'rememberedPassword' });
+      }
       setIsSuccess(true);
       setToastMessage('Login Admin berhasil. Mengalihkan...');
       setShowToast(true);
@@ -130,6 +166,19 @@ export default function Login() {
                   </span>
                 </button>
               </div>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-primary bg-surface border-outline-variant rounded focus:ring-primary focus:ring-2"
+              />
+              <label htmlFor="rememberMe" className="ml-2 font-body-sm text-on-surface-variant">
+                Ingat Saya
+              </label>
             </div>
             
             <div className="pt-sm">
