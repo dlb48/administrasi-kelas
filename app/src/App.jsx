@@ -9,6 +9,7 @@ import ClassFund from './pages/ClassFund';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import StudentProfile from './pages/StudentProfile';
+import Inventaris from './pages/Inventaris';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -61,6 +62,7 @@ function App() {
               <Route path="attendance" element={<Attendance />} />
               <Route path="students" element={<Students />} />
               <Route path="class-fund" element={<ClassFund />} />
+              <Route path="inventaris" element={<Inventaris />} />
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<Settings />} />
               <Route path="profile" element={<StudentProfile />} />
