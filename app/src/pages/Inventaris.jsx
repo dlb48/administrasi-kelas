@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -232,7 +235,7 @@ export default function Inventaris() {
     }
   };
   
-  const downloadCSV = () => {
+  const downloadCSV = async () => {
     if (inventories.length === 0) {
       alert("Belum ada data barang untuk di-download.");
       return;
@@ -255,18 +258,61 @@ export default function Inventaris() {
     
     const today = new Date();
     const dateStr = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`;
-    XLSX.writeFile(workbook, `Inventaris_Kelas_${dateStr}.xlsx`);
+    const fileName = `Inventaris_Kelas_${dateStr}.xlsx`;
+    
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache
+        });
+        
+        await Share.share({
+          title: fileName,
+          url: result.uri,
+          dialogTitle: 'Bagikan Excel'
+        });
+      } catch (e) {
+        alert("Gagal membagikan file Excel: " + e.message);
+      }
+    } else {
+      XLSX.writeFile(workbook, fileName);
+    }
     
     setOpenImportDropdown(false);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const headers = ['Kode Barang', 'Nama Barang', 'Jumlah', 'Kondisi', 'Lokasi', 'Keterangan'];
     const example = ['BRG-001', 'Spidol Papan Tulis', '5', 'Baik', 'Lemari Depan', 'Warna Hitam'];
     const worksheet = XLSX.utils.aoa_to_sheet([headers, example]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template Inventaris");
-    XLSX.writeFile(workbook, `Template_Inventaris.csv`);
+    
+    const fileName = `Template_Inventaris.csv`;
+    
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'csv' });
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache
+        });
+        
+        await Share.share({
+          title: fileName,
+          url: result.uri,
+          dialogTitle: 'Bagikan Template CSV'
+        });
+      } catch (e) {
+        alert("Gagal membagikan file Template: " + e.message);
+      }
+    } else {
+      XLSX.writeFile(workbook, fileName);
+    }
     setOpenImportDropdown(false);
   };
 

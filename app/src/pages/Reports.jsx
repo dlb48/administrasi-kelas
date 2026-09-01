@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 export default function Reports() {
   const today = new Date();
@@ -33,7 +36,7 @@ export default function Reports() {
     }
   }, [startDate, endDate, students]);
 
-  const downloadExcel = () => {
+  const downloadExcel = async () => {
     if (attendanceReport.length === 0) {
       alert("Belum ada data untuk di-download.");
       return;
@@ -75,7 +78,28 @@ export default function Reports() {
     const startStr = `${startObj.getDate()}_${monthNames[startObj.getMonth()]}_${startObj.getFullYear()}`;
     const endStr = `${endObj.getDate()}_${monthNames[endObj.getMonth()]}_${endObj.getFullYear()}`;
     
-    XLSX.writeFile(workbook, `Laporan_Siswa_${startStr}_sd_${endStr}.xlsx`);
+    const fileName = `Laporan_Siswa_${startStr}_sd_${endStr}.xlsx`;
+    
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache
+        });
+        
+        await Share.share({
+          title: fileName,
+          url: result.uri,
+          dialogTitle: 'Bagikan Laporan Excel'
+        });
+      } catch (e) {
+        alert("Gagal membagikan laporan: " + e.message);
+      }
+    } else {
+      XLSX.writeFile(workbook, fileName);
+    }
   };
 
   const fetchStudents = async () => {
